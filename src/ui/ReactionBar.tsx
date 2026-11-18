@@ -3,6 +3,7 @@ import { REACTIONS } from '../data/reactions';
 import { react } from '../state/actions';
 import { useDispatch, useMe, useSession, useStore } from '../state/RoomContext';
 import type { ReactionId } from '../state/types';
+import { ReactionIcon } from './ReactionIcon';
 
 const COOLDOWN = 900;
 
@@ -10,6 +11,7 @@ export function ReactionBar() {
   const store = useStore();
   const dispatch = useDispatch();
   const me = useMe();
+  const world = useSession((s) => s.world);
   const queued = useSession((s) => s.speakQueue.some((q) => q.seat === me.seat));
   const [pressed, setPressed] = useState<ReactionId | null>(null);
 
@@ -34,7 +36,7 @@ export function ReactionBar() {
             title={waiting ? 'もう一度押すと取り下げます' : r.label}
           >
             <span className="reaction__emoji" aria-hidden>
-              {r.emoji}
+              <ReactionIcon reaction={r.id} world={world} />
             </span>
             <span className="reaction__label">{waiting ? '順番待ち中' : r.label}</span>
           </button>

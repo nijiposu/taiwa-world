@@ -46,7 +46,7 @@ export function HostMenu({ onClose, onPick }: { onClose: () => void; onPick: () 
               onPick();
             }}
           >
-            問いを一覧から選ぶ
+            困ったときのお題（ホストだけに見える）
           </button>
         </div>
       </div>

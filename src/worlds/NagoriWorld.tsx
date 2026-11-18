@@ -2,15 +2,14 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { sound } from '../audio/sound';
 import { displayName } from '../data/seats';
 import { useScene } from '../engine/useScene';
-import { drawTopic, keepsake } from '../state/actions';
-import { useActionEffect, useDispatch, useMe, useSession, useStore } from '../state/RoomContext';
+import { keepsake } from '../state/actions';
+import { useActionEffect, useDispatch, useMe, useSession } from '../state/RoomContext';
 import { WordPrompt } from '../ui/WordPrompt';
 import { NagoriScene, leafPoint, treeLayout } from './NagoriScene';
 import { WorldLayers, drawsBackdrop } from './WorldLayers';
 import { useReactionEffects } from './useReactionEffects';
 
 export function NagoriWorld() {
-  const store = useStore();
   const dispatch = useDispatch();
   const me = useMe();
   const leaves = useSession((s) => s.leaves);
@@ -19,15 +18,13 @@ export function NagoriWorld() {
   const [asking, setAsking] = useState(false);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [openLeaf, setOpenLeaf] = useState<string | null>(null);
-  const [touched, setTouched] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const { canvasRef, scene } = useScene((c) => new NagoriScene(c), {
     backdrop: drawsBackdrop('nagori'),
     onHit: (hit) => {
       if (hit === 'trunk') {
-        setTouched(true);
-        dispatch(drawTopic(store.getState(), me.seat, 'tree'));
+        dispatch({ type: 'fx', world: 'nagori', fx: 'trunk' });
       }
       if (hit === 'spirit') sound.pop(1.6);
       if (hit === 'canopy') sound.chime(Math.floor(Math.random() * 4), undefined, 0.25);
@@ -47,7 +44,7 @@ export function NagoriWorld() {
 
   useActionEffect((action, remote) => {
     // 他の人が幹に触れたときも、樹が応える
-    if (remote && action.type === 'drawTopic' && action.drawn.source === 'tree') scene?.touchTrunk();
+    if (remote && action.type === 'fx' && action.world === 'nagori' && action.fx === 'trunk') scene?.touchTrunk();
   });
 
   useLayoutEffect(() => {
@@ -90,11 +87,9 @@ export function NagoriWorld() {
         aria-label="樹に触れて問いを受け取る"
         onClick={() => {
           scene?.touchTrunk();
-          setTouched(true);
-          dispatch(drawTopic(store.getState(), me.seat, 'tree'));
+          dispatch({ type: 'fx', world: 'nagori', fx: 'trunk' });
         }}
       />
-      <p className={`world-hint ${touched ? 'is-hidden' : ''}`}>樹の幹に触れると、問いが芽吹きます。根もとの小さな子たちにも……</p>
       <button className="world-action world-action--leaf" onClick={() => setAsking(true)}>
         <span aria-hidden>🍃</span> 葉にことばを残す
       </button>

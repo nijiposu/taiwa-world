@@ -16,7 +16,6 @@ import { RecordSheet } from './ui/RecordSheet';
 import { SpeakQueue } from './ui/SpeakQueue';
 import { PanelProvider, type Panel } from './ui/PanelContext';
 import { TopBar } from './ui/TopBar';
-import { TopicCard } from './ui/TopicCard';
 import { TopicPicker } from './ui/TopicPicker';
 import { WorldAtlas } from './ui/WorldAtlas';
 import { AmbientScene } from './worlds/AmbientScene';
@@ -118,7 +117,6 @@ export function App() {
           <div className="hud__right">
             <SpeakQueue />
           </div>
-          <TopicCard onPick={() => setPanel('pick')} />
           <ReactionFloat />
           <ReactionBar />
         </div>

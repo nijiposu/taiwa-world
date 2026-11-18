@@ -6,6 +6,7 @@ import { ATLAS, SPOT_OFFSET, type AtlasRegion } from '../data/atlas';
 import { WORLDS } from '../data/worlds';
 import { seeded } from '../engine/Scene';
 import { useDispatch, useMe, useSession } from '../state/RoomContext';
+import { Avatar } from './Avatar';
 import type { WorldId } from '../state/types';
 
 const W = 1600;
@@ -258,7 +259,7 @@ export function WorldAtlas({ onClose }: { onClose: () => void }) {
           <div ref={partyRef} className="atlas__party" style={{ left: `${(herePos.x / W) * 100}%`, top: `${(herePos.y / H) * 100}%` }} aria-label="みんなの現在地">
             <span className="atlas__party-faces">
               {Object.values(participants).map((p) => (
-                <span key={p!.seat}>{p!.avatar}</span>
+                <Avatar key={p!.seat} value={p!.avatar} />
               ))}
             </span>
             <small>いまここ</small>

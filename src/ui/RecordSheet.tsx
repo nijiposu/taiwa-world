@@ -5,6 +5,7 @@ import { WORLDS } from '../data/worlds';
 import { EMPTY_RECORD } from '../state/reducer';
 import { useDispatch, useMe, useSession } from '../state/RoomContext';
 import type { PersonalRecord, SeatId, SessionState } from '../state/types';
+import { Avatar } from './Avatar';
 import { Modal } from './Modal';
 
 const FIELDS: { key: keyof PersonalRecord; label: string; placeholder: string; hostOnly?: boolean }[] = [
@@ -73,7 +74,7 @@ export function RecordSheet({ onClose }: { onClose: () => void }) {
         <div className="chips">
           {SEATS.filter((s) => state.participants[s.seat]).map((s) => (
             <button key={s.seat} className={`chip ${seat === s.seat ? 'is-on' : ''}`} onClick={() => setSeat(s.seat)}>
-              {state.participants[s.seat]?.avatar} {displayName(state.participants[s.seat]?.name, s.seat)}
+              <Avatar value={state.participants[s.seat]?.avatar} className="chip__face" /> {displayName(state.participants[s.seat]?.name, s.seat)}
             </button>
           ))}
         </div>
@@ -94,8 +95,18 @@ export function RecordSheet({ onClose }: { onClose: () => void }) {
               </span>
             ))}
           </dd>
-          <dt>話した問い</dt>
-          <dd>{topics.length ? <ul>{topics.map((t) => <li key={t}>{t}</li>)}</ul> : 'まだありません'}</dd>
+          {topics.length > 0 && (
+            <>
+              <dt>話した問い</dt>
+              <dd>
+                <ul>
+                  {topics.map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
+              </dd>
+            </>
+          )}
           {words.length > 0 && (
             <>
               <dt>残したことば</dt>

@@ -3,6 +3,7 @@ import { REACTION_BY_ID } from '../data/reactions';
 import { displayName } from '../data/seats';
 import { useActionEffect, useSession } from '../state/RoomContext';
 import type { ReactionEvent } from '../state/types';
+import { ReactionIcon } from './ReactionIcon';
 
 /** リアクションが画面にふわっと浮かぶ。誰の気持ちかがわかるように名前を添える */
 export function ReactionFloat() {
@@ -22,7 +23,9 @@ export function ReactionFloat() {
         const r = REACTION_BY_ID[i.reaction];
         return (
           <div key={i.id} className={`float float--${i.reaction}`} style={{ left: `${i.x}%`, ['--c' as string]: r.color }}>
-            <span className="float__emoji">{r.emoji}</span>
+            <span className="float__emoji">
+              <ReactionIcon reaction={i.reaction} world={i.world} />
+            </span>
             <span className="float__name">
               {displayName(participants[i.seat]?.name, i.seat)}・{r.label}
             </span>

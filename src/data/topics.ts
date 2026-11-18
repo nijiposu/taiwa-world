@@ -33,3 +33,15 @@ export const TOPIC_TAGS = Array.from(new Set(TOPICS.map((t) => t.tag)));
 
 /** おみくじの運勢。問いに添える、ちょっとした遊び */
 export const FORTUNES = ['大吉', '吉', '中吉', '小吉', '末吉', '縁吉', '語吉', '灯吉'];
+
+/** 灯籠祭のおみくじ。問いではなく、場をなごませるひとこと */
+export const OMIKUJI = [
+  { fortune: '大吉', line: '好きなものを、好きなだけ語ってよし。' },
+  { fortune: '中吉', line: '今夜は、聞き役にまわると良いことあり。' },
+  { fortune: '吉', line: '「わかる！」を、いつもより一回多めに。' },
+  { fortune: '小吉', line: '話の寄り道、大いに吉。' },
+  { fortune: '末吉', line: '言葉にならない「好き」も、そのままでよし。' },
+  { fortune: '灯吉', line: '誰かの「好き」に、灯りをひとつ。' },
+  { fortune: '縁吉', line: '同じものを好きな人に、出会う予感。' },
+  { fortune: '語吉', line: '最近ハマったものの話に、追い風あり。' },
+];

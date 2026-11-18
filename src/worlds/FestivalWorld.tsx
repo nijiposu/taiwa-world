@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { sound } from '../audio/sound';
 import { worldAssets } from '../config/assets';
 import { coverPoint, coverUV } from '../engine/cover';
-import { drawTopic, keepsake } from '../state/actions';
-import { useActionEffect, useDispatch, useMe, useSession, useStore } from '../state/RoomContext';
-import type { DrawnTopic } from '../state/types';
+import { OMIKUJI } from '../data/topics';
+import { keepsake } from '../state/actions';
+import { useActionEffect, useDispatch, useMe, useSession } from '../state/RoomContext';
 import { WordPrompt } from '../ui/WordPrompt';
 import { CoverStage } from './CoverStage';
 import { FESTIVAL_ASPECT, FestivalScene } from './FestivalScene';
@@ -27,13 +27,12 @@ export function FestivalWorld() {
   const rootRef = useRef<HTMLDivElement>(null);
   const [scene, setScene] = useState<FestivalScene | null>(null);
   useReactionEffects('lantern', scene);
-  const store = useStore();
   const dispatch = useDispatch();
   const me = useMe();
   const lanterns = useSession((s) => s.lanterns);
   const [ringing, setRinging] = useState<number | null>(null);
   const [shaking, setShaking] = useState(false);
-  const [slip, setSlip] = useState<DrawnTopic | null>(null);
+  const [slip, setSlip] = useState<(typeof OMIKUJI)[number] | null>(null);
   const [asking, setAsking] = useState(false);
 
   useEffect(() => {
@@ -71,24 +70,23 @@ export function FestivalWorld() {
         const q = coverPoint(root.clientWidth, root.clientHeight, FESTIVAL_ASPECT, action.u, action.v);
         scene.ripple(q.x, q.y);
       }
-    }
-    if (action.type === 'drawTopic' && action.drawn.world === 'lantern') {
-      if (action.drawn.source === 'furin') {
-        const i = Number(action.drawn.extra ?? 0) % FURIN.length;
+      if (action.fx === 'furin') {
+        const i = (action.value ?? 0) % FURIN.length;
         setRinging(i);
         sound.chime(i);
+        scene.flock(5);
         window.setTimeout(() => setRinging((r) => (r === i ? null : r)), 2600);
       }
-      if (action.drawn.source === 'omikuji') {
+      if (action.fx === 'omikuji') {
+        const fortune = OMIKUJI[(action.value ?? 0) % OMIKUJI.length];
         setShaking(true);
         setSlip(null);
         window.setTimeout(() => {
           setShaking(false);
-          setSlip(action.drawn);
+          setSlip(fortune);
           sound.chime(3, undefined, 0.6);
         }, 1100);
       }
-      scene.flock(6);
     }
   });
 
@@ -113,7 +111,7 @@ export function FestivalWorld() {
         <div className="omikuji omikuji--stone" style={{ left: '22%', top: '79%' }} onPointerDown={(e) => e.stopPropagation()}>
           <button
             className={`omikuji__box ${shaking ? 'is-shaking' : ''}`}
-            onClick={() => dispatch(drawTopic(store.getState(), me.seat, 'omikuji'))}
+            onClick={() => dispatch({ type: 'fx', world: 'lantern', fx: 'omikuji', value: Math.floor(Math.random() * OMIKUJI.length) })}
             disabled={shaking}
             aria-label="おみくじを引く"
           >
@@ -130,7 +128,7 @@ export function FestivalWorld() {
               key={i}
               className={`furin ${ringing === i ? 'is-ringing' : ''}`}
               style={{ ['--glass' as string]: f.glass, ['--paper' as string]: f.paper, animationDelay: `${-i * 1.3}s` }}
-              onClick={() => dispatch(drawTopic(store.getState(), me.seat, 'furin', undefined, String(i)))}
+              onClick={() => dispatch({ type: 'fx', world: 'lantern', fx: 'furin', value: i })}
               aria-label={`風鈴（${f.pattern}）`}
             >
               <span className="furin__string" />
@@ -141,8 +139,8 @@ export function FestivalWorld() {
         </div>
         {slip && (
           <button className="omikuji__slip omikuji__slip--float" onPointerDown={(e) => e.stopPropagation()} onClick={() => setSlip(null)} aria-label="おみくじを閉じる">
-            <span className="omikuji__fortune">{slip.extra}</span>
-            <span className="omikuji__q">{slip.topic.text}</span>
+            <span className="omikuji__fortune">{slip.fortune}</span>
+            <span className="omikuji__q">{slip.line}</span>
           </button>
         )}
         <button className="world-action world-action--lantern" onPointerDown={(e) => e.stopPropagation()} onClick={() => setAsking(true)}>

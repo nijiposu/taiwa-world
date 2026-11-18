@@ -6,6 +6,8 @@ import { SEATS, displayName } from '../data/seats';
 import { useActionEffect, useDispatch, useMe, useOnline, useSession } from '../state/RoomContext';
 import type { ReactionEvent, SeatId } from '../state/types';
 import { pick } from '../state/util';
+import { Avatar } from '../ui/Avatar';
+import { ReactionIcon } from '../ui/ReactionIcon';
 import { CoverStage } from './CoverStage';
 import { HEARTH_ASPECT, HearthScene } from './HearthScene';
 
@@ -199,13 +201,13 @@ export function HearthWorld() {
                 {IMG.sit ? <img src={assetUrl(IMG.sit)} alt="" draggable={false} style={{ transform: pos.flip ? 'scaleX(-1)' : undefined }} /> : <i>🌱</i>}
               </span>
               <span className="sprout-seat__name">
-                <b>{p.avatar}</b>
+                <Avatar value={p.avatar} className="sprout-seat__face" />
                 {displayName(p.name, s.seat)}
               </span>
               {waiting && <span className="sprout-seat__hand">✋</span>}
               {bubble && (
                 <span key={last!.id} className="sprout-seat__bubble" style={{ ['--c' as string]: bubble.color }}>
-                  {bubble.emoji}
+                  <ReactionIcon reaction={last!.reaction} world="campfire" />
                 </span>
               )}
             </button>

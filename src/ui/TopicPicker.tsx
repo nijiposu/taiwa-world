@@ -1,25 +1,28 @@
 import { useState } from 'react';
 import { TOPICS, TOPIC_TAGS } from '../data/topics';
-import { drawTopic } from '../state/actions';
-import { useDispatch, useMe, useSession, useStore } from '../state/RoomContext';
+import { pick } from '../state/util';
 import { Modal } from './Modal';
 
+/**
+ * 困ったときのお題。ホストの画面にだけ出て、ほかの人には見えない（何も送らない）。
+ * 話が止まったときに、ここから選んで声で投げかける。
+ */
 export function TopicPicker({ onClose }: { onClose: () => void }) {
   const [tag, setTag] = useState<string | null>(null);
-  const [custom, setCustom] = useState('');
-  const used = useSession((s) => s.deckUsed);
-  const store = useStore();
-  const dispatch = useDispatch();
-  const me = useMe();
+  const [current, setCurrent] = useState(() => pick(TOPICS));
   const list = tag ? TOPICS.filter((t) => t.tag === tag) : TOPICS;
 
-  const choose = (text: string, id: string, t: string) => {
-    dispatch(drawTopic(store.getState(), me.seat, 'pick', { id, text, tag: t }));
-    onClose();
-  };
-
   return (
-    <Modal title="問いを選ぶ" onClose={onClose} wide>
+    <Modal title="困ったときのお題" onClose={onClose} wide>
+      <p className="muted">ホストの画面にだけ出ています。参加者には見えません。</p>
+      <div className="host-topic">
+        <p className="host-topic__text" key={current.id}>
+          {current.text}
+        </p>
+        <button className="btn btn--primary btn--small" onClick={() => setCurrent(pick(TOPICS.filter((t) => t.id !== current.id)))}>
+          別のお題
+        </button>
+      </div>
       <div className="chips">
         <button className={`chip ${tag === null ? 'is-on' : ''}`} onClick={() => setTag(null)}>
           すべて
@@ -33,26 +36,13 @@ export function TopicPicker({ onClose }: { onClose: () => void }) {
       <ul className="topic-list">
         {list.map((t) => (
           <li key={t.id}>
-            <button className={used.includes(t.id) ? 'is-used' : ''} onClick={() => choose(t.text, t.id, t.tag)}>
+            <button className={t.id === current.id ? 'is-used' : ''} onClick={() => setCurrent(t)}>
               <small>{t.tag}</small>
               {t.text}
-              {used.includes(t.id) && <em>話した</em>}
             </button>
           </li>
         ))}
       </ul>
-      <form
-        className="form-row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (custom.trim()) choose(custom.trim(), `custom-${Date.now()}`, 'その場の問い');
-        }}
-      >
-        <input className="field" value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="その場で問いを書く" maxLength={60} />
-        <button className="btn btn--primary" disabled={!custom.trim()}>
-          この問いにする
-        </button>
-      </form>
     </Modal>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { APP_SUBTITLE, APP_TITLE } from '../config/app';
 import { AVATARS, SEATS, SEAT_BY_ID } from '../data/seats';
+import { Avatar } from './Avatar';
 import type { Participant, SeatId, SessionState } from '../state/types';
 
 export function Entry({
@@ -58,7 +59,7 @@ export function Entry({
                 onClick={() => chooseSeat(s.seat)}
                 disabled={taken && initial?.seat !== s.seat}
               >
-                <span aria-hidden>{p?.avatar ?? s.defaultAvatar}</span>
+                <Avatar value={p?.avatar ?? s.defaultAvatar} className="seat__face" />
                 <strong>{p?.name || s.defaultName || (s.seat === 'guest1' ? 'ゲストA' : 'ゲストB')}</strong>
                 <small>{taken ? '入室中' : s.label}</small>
               </button>
@@ -82,7 +83,7 @@ export function Entry({
         <div className="entry__avatars">
           {AVATARS.map((a) => (
             <button type="button" key={a} className={`avatar ${avatar === a ? 'is-on' : ''}`} onClick={() => setAvatar(a)} aria-label={`アイコン ${a}`}>
-              {a}
+              <Avatar value={a} />
             </button>
           ))}
         </div>

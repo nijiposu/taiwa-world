@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { REACTION_BY_ID } from '../data/reactions';
 import { SEATS, displayName } from '../data/seats';
 import { useMe, useOnline, useSession } from '../state/RoomContext';
+import { Avatar } from './Avatar';
+import { ReactionIcon } from './ReactionIcon';
 
 const BUBBLE_MS = 4500;
 
@@ -33,7 +35,7 @@ export function Participants() {
             className={`person ${isOnline ? 'is-online' : ''} ${!p ? 'is-empty' : ''} ${waiting >= 0 ? 'is-waiting' : ''}`}
           >
             <span className="person__avatar" aria-hidden>
-              {p?.avatar ?? '·'}
+              <Avatar value={p?.avatar} />
             </span>
             <span className="person__meta">
               <span className="person__name">
@@ -52,7 +54,7 @@ export function Participants() {
             )}
             {bubble && (
               <span key={last!.id} className="person__bubble" style={{ ['--c' as string]: bubble.color }}>
-                {bubble.emoji}
+                <ReactionIcon reaction={last!.reaction} world={last!.world} />
               </span>
             )}
           </div>
