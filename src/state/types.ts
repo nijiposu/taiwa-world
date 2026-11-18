@@ -107,4 +107,4 @@ export type Action =
   | { type: 'updateRecord'; seat: SeatId; patch: Partial<PersonalRecord> }
   | { type: 'reset'; at: number }
   /** 状態は変えず、全員の画面で同じ演出だけを起こす（焚き火をつつく、ランタンに触れる など） */
-  | { type: 'fx'; world: WorldId; fx: string; value?: number };
+  | { type: 'fx'; world: WorldId; fx: string; value?: number; u?: number; v?: number };

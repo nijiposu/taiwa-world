@@ -11,3 +11,9 @@ export function coverPoint(w: number, h: number, aspect: number, u: number, v: n
   const r = coverRect(w, h, aspect);
   return { x: r.x + u * r.w, y: r.y + v * r.h };
 }
+
+/** 画面上の px を、絵の中の位置（0..1）に戻す */
+export function coverUV(w: number, h: number, aspect: number, x: number, y: number) {
+  const r = coverRect(w, h, aspect);
+  return { u: (x - r.x) / r.w, v: (y - r.y) / r.h };
+}

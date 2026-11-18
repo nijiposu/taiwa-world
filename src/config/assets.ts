@@ -48,7 +48,8 @@ export const worldAssets: Record<WorldId, WorldAssets> = {
     },
   },
   lantern: {
-    // background: 'assets/lantern/background.jpg',
+    // ちえさんの「灯籠祭 −心の旅路−」の絵
+    scenes: { festival: 'assets/lantern/festival.webp' },
     // ambient: 'assets/lantern/ambient.mp3',
   },
   nagori: {

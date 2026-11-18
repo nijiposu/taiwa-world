@@ -208,6 +208,20 @@ button:disabled { cursor: default; }
 @keyframes leaf-sway { 0%, 100% { transform: translateX(-2px) rotate(-4deg); } 50% { transform: translateX(3px) rotate(5deg); } }
 @keyframes leaf-grow { from { transform: scale(0) rotate(-40deg); opacity: 0; } }
 
+/* 灯籠祭（ちえさんの絵） */
+.festival { cursor: pointer; }
+.festival__stage .cover__box, .festival .world__canvas--fx { animation: hearth-breathe 30s ease-in-out infinite alternate; transform-origin: 50% 50%; }
+.furin-eave--corner { left: 16px; right: auto; top: 0; padding-top: 22px; border-top: 0; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5)); }
+.furin-eave--corner::before {
+  content: ''; position: absolute; left: -16px; right: -40px; top: 0; height: 14px; border-radius: 0 0 6px 0;
+  background: linear-gradient(#2a1820, #120a10); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+.room .furin-eave--corner { top: 46px; left: 220px; }
+.cover__box .omikuji--stone { position: absolute; right: auto; bottom: auto; transform: translate(-50%, -100%) scale(0.85); transform-origin: 50% 100%; }
+.omikuji__slip--float { position: absolute; left: 50%; top: 50%; bottom: auto; transform: translate(-50%, -50%); width: min(300px, calc(100% - 32px)); }
+@media (max-aspect-ratio: 1/1) { .cover__box .omikuji--stone { left: 44% !important; top: 70% !important; transform: translate(-50%, -100%) scale(0.7); } }
+@media (max-width: 1100px) { .room .furin-eave--corner { left: 12px; top: 96px; transform: scale(0.75); transform-origin: 0 0; } }
+
 /* 樹の下の焚き火（ナゴリの樹・森の広場） */
 .hearth { cursor: pointer; }
 .hearth .world__canvas--fx { pointer-events: none; }
