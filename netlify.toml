@@ -1,7 +1,0 @@
-# Netlify で公開するときは、サイト設定の Base directory を taiwa-world にする
-[build]
-  command = "npm ci && npm run build"
-  publish = "dist"
-
-[build.environment]
-  NODE_VERSION = "20"
