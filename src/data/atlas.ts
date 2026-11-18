@@ -1,3 +1,4 @@
+import { OPEN_WORLDS } from '../config/app';
 import type { WorldId } from '../state/types';
 
 /**
@@ -18,7 +19,7 @@ export interface AtlasRegion {
   comingSoon?: string;
 }
 
-export const ATLAS: AtlasRegion[] = [
+const ALL_REGIONS: AtlasRegion[] = [
   { id: 'tree', name: '樹のエリア', note: '虹乃氏の世界', x: 800, y: 520, r: 190, color: ['#3f8a5e', '#16402c'], worlds: ['campfire', 'nagori'] },
   { id: 'wa', name: '倭のエリア', note: 'ちえさんの世界', x: 330, y: 270, r: 150, color: ['#c0584a', '#4a1a26'], worlds: ['lantern'] },
   { id: 'moon', name: '月のエリア', note: 'ちえさんの世界', x: 800, y: 150, r: 120, color: ['#8c86c8', '#2a2856'], worlds: [], comingSoon: 'ちえさんの作品がここに来る予定です' },
@@ -26,6 +27,11 @@ export const ATLAS: AtlasRegion[] = [
   { id: 'water', name: '水のエリア', note: '虹乃氏の世界', x: 330, y: 770, r: 160, color: ['#3a78c0', '#0e2448'], worlds: ['minasoko'] },
   { id: 'bbq', name: 'BBQ広場', note: '虹乃氏の世界', x: 1270, y: 770, r: 150, color: ['#c88a3e', '#4a2a14'], worlds: ['bbq'] },
 ];
+
+/** 地図に出すのは、開いているワールドがあるエリアだけ（準備中の霧のエリアも出さない） */
+export const ATLAS: AtlasRegion[] = ALL_REGIONS.map((r) => ({ ...r, worlds: r.worlds.filter((w) => OPEN_WORLDS.includes(w)) })).filter(
+  (r) => r.worlds.length > 0,
+);
 
 /** エリアの中で、各ワールドの入口を置く位置（エリア中心からのずれ） */
 export const SPOT_OFFSET: Partial<Record<WorldId, [number, number]>> = {

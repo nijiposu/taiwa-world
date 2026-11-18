@@ -23,9 +23,6 @@ export function Help({ onClose, roomId, onChangeSeat }: { onClose: () => void; r
           <li>樹の下の焚き火：焚き火や夜空に触れてみて。ここが集合場所です</li>
           <li>ナゴリの樹：幹に触れると問い、葉にことばを残せます</li>
           <li>灯籠祭：風鈴・おみくじでお題、灯籠にひとことを</li>
-          <li>水底郵便局：扉から中へ。封筒を選ぶと次の問いが届きます</li>
-          <li>才能BBQ：「わかる！」で炭火が灯ります</li>
-          <li>やりたいことが消えた町：時計塔で次の問い、「好き」を置くと町に色が戻ります</li>
         </ul>
         <p className="muted">ルーム：{roomId}（試作版のため、同じブラウザの別タブ同士でだけ同期します）</p>
         <button className="btn btn--ghost btn--small" onClick={onChangeSeat}>
