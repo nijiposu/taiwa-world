@@ -87,6 +87,15 @@ export class RoomStore {
   getOnline = () => this.presenceSnapshot;
   getStatus = () => this.status;
 
+  /** 相手の端末（clientId）が座っている席 */
+  seatOf(clientId: string): SeatId | null {
+    return this.presence.get(clientId)?.seat ?? null;
+  }
+
+  get seat() {
+    return this.mySeat;
+  }
+
   /** 声の通話の合図を送る（to が無ければ部屋の全員へ） */
   signal(data: SignalData, to?: string) {
     this.transport.send({ kind: 'signal', from: this.clientId, to, data });

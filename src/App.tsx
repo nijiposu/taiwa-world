@@ -21,6 +21,7 @@ import { WorldAtlas } from './ui/WorldAtlas';
 import { AmbientScene } from './worlds/AmbientScene';
 import { CampfireScene } from './worlds/CampfireScene';
 import { CoverStage } from './worlds/CoverStage';
+import { VoiceProvider } from './voice/VoiceContext';
 import { WorldStage } from './worlds/WorldStage';
 
 /** イラストが主役のワールドでは、お題カードを右に寄せて絵を隠さない */
@@ -109,6 +110,7 @@ export function App() {
   return (
     <RoomProvider value={{ store, me }}>
       <PanelProvider value={setPanel}>
+      <VoiceProvider>
       <div className={`app room ${SIDE_CARD_WORLDS.has(state.world) ? 'room--side' : ''}`}>
         <WorldStage />
         <div className="hud">
@@ -138,6 +140,7 @@ export function App() {
           />
         )}
       </div>
+      </VoiceProvider>
       </PanelProvider>
     </RoomProvider>
   );

@@ -8,6 +8,7 @@ import type { ReactionEvent, SeatId } from '../state/types';
 import { pick } from '../state/util';
 import { Avatar } from '../ui/Avatar';
 import { ReactionIcon } from '../ui/ReactionIcon';
+import { useVoice } from '../voice/VoiceContext';
 import { CoverStage } from './CoverStage';
 import { HEARTH_ASPECT, HearthScene } from './HearthScene';
 
@@ -61,6 +62,7 @@ export function HearthWorld() {
   const reactions = useSession((s) => s.reactions);
   const queue = useSession((s) => s.speakQueue);
   const online = useOnline();
+  const { speaking } = useVoice();
   const combo = useRef({ n: 0, at: 0 });
   const [walker, setWalker] = useState<{ key: number; dir: 1 | -1 } | null>(null);
   const [peek, setPeek] = useState(0);
@@ -188,7 +190,7 @@ export function HearthWorld() {
           return (
             <button
               key={s.seat}
-              className={`sprout-seat ${narrow ? 'is-narrow' : ''} ${online.includes(s.seat) ? '' : 'is-away'} ${waiting ? 'is-waiting' : ''} ${s.seat === me.seat ? 'is-me' : ''}`}
+              className={`sprout-seat ${speaking.includes(s.seat) ? 'is-speaking' : ''} ${narrow ? 'is-narrow' : ''} ${online.includes(s.seat) ? '' : 'is-away'} ${waiting ? 'is-waiting' : ''} ${s.seat === me.seat ? 'is-me' : ''}`}
               style={{ left: `${pos.u}%`, top: `${pos.v}%` } as CSSProperties}
               onPointerDown={(e) => {
                 e.stopPropagation();

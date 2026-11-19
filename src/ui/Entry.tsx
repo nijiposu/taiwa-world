@@ -90,7 +90,7 @@ export function Entry({
 
         <button className="btn btn--primary btn--large">焚き火の広場へ</button>
         <p className="entry__note">
-          声はZoom・Google Meetでつないでください。顔出しは不要です。
+          入ったあと、右上の「声で参加」で話せます。顔出しは不要です。
           <br />
           ひとりで試すときは、ホストの席がおすすめです。
         </p>

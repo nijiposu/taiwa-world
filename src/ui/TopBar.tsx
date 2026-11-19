@@ -5,6 +5,7 @@ import { WORLDS } from '../data/worlds';
 import { useConnection, useMe, useSession } from '../state/RoomContext';
 import type { Panel } from './PanelContext';
 import { Timer } from './Timer';
+import { VoiceButton } from './VoiceButton';
 
 export function TopBar({ open }: { open: (p: Panel) => void }) {
   const world = useSession((s) => s.world);
@@ -36,6 +37,7 @@ export function TopBar({ open }: { open: (p: Panel) => void }) {
       )}
       <Timer />
       <div className="topbar__tools">
+        <VoiceButton />
         <button
           className={`tool ${soundOn ? 'is-on' : ''}`}
           onClick={() => {

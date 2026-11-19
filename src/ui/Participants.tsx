@@ -4,6 +4,7 @@ import { SEATS, displayName } from '../data/seats';
 import { useMe, useOnline, useSession } from '../state/RoomContext';
 import { Avatar } from './Avatar';
 import { ReactionIcon } from './ReactionIcon';
+import { useVoice } from '../voice/VoiceContext';
 
 const BUBBLE_MS = 4500;
 
@@ -13,6 +14,7 @@ export function Participants() {
   const reactions = useSession((s) => s.reactions);
   const queue = useSession((s) => s.speakQueue);
   const online = useOnline();
+  const { speaking } = useVoice();
   const me = useMe();
   const [now, setNow] = useState(Date.now());
 
@@ -32,7 +34,7 @@ export function Participants() {
         return (
           <div
             key={seat.seat}
-            className={`person ${isOnline ? 'is-online' : ''} ${!p ? 'is-empty' : ''} ${waiting >= 0 ? 'is-waiting' : ''}`}
+            className={`person ${speaking.includes(seat.seat) ? 'is-speaking' : ''} ${isOnline ? 'is-online' : ''} ${!p ? 'is-empty' : ''} ${waiting >= 0 ? 'is-waiting' : ''}`}
           >
             <span className="person__avatar" aria-hidden>
               <Avatar value={p?.avatar} />
