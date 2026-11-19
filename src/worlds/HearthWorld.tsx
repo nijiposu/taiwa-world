@@ -133,12 +133,7 @@ export function HearthWorld() {
       const r = action.event.reaction;
       scene.reaction(r);
       setHops((h) => ({ ...h, [action.event.seat]: Date.now() }));
-      const played =
-        r === 'empathy' ? sound.sample('campfire', 'bond', 0.6)
-        : r === 'more' ? sound.sample('campfire', 'insight', 0.5)
-        : r === 'other' ? sound.sample('campfire', 'fog', 0.6)
-        : sound.sample('campfire', 'fire', 0.7);
-      if (!played) sound.pop(r === 'speak' ? 1.3 : 1);
+      sound.reaction(r);
     }
   });
 

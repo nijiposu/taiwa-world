@@ -220,6 +220,11 @@ class SoundEngine {
     o.stop(t + 0.3);
   }
 
+  /** リアクションの音。どのワールドでも同じ（灯籠祭の音にそろえる） */
+  reaction(id: 'empathy' | 'more' | 'speak' | 'other') {
+    this.pop(id === 'speak' ? 1.3 : 1);
+  }
+
   /** 遠くの花火 */
   boom() {
     if (!this.enabled || !this.ensure() || !this.master) return;

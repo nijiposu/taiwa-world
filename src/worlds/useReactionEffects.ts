@@ -7,6 +7,6 @@ export function useReactionEffects(world: WorldId, scene: { reaction(id: Reactio
   useActionEffect((action) => {
     if (action.type !== 'react' || action.event.world !== world || !scene) return;
     scene.reaction(action.event.reaction);
-    sound.pop(action.event.reaction === 'speak' ? 1.3 : 1);
+    sound.reaction(action.event.reaction);
   });
 }
