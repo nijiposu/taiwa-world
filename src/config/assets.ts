@@ -45,6 +45,8 @@ export const worldAssets: Record<WorldId, WorldAssets> = {
       insight: 'assets/campfire/sfx-insight.mp3',
       tap: 'assets/campfire/sfx-tap.mp3',
       fog: 'assets/campfire/sfx-fog.mp3',
+      page: 'assets/campfire/sfx-page.mp3',
+      open: 'assets/campfire/sfx-open.mp3',
     },
   },
   lantern: {

@@ -480,8 +480,8 @@ button:disabled { cursor: default; }
   opacity: 0; transition: opacity 0.9s ease;
 }
 .veil--leaving { opacity: 1; pointer-events: auto; }
-.veil--arriving { opacity: 1; animation: veil-out 1.9s ease forwards; }
-@keyframes veil-out { 0%, 37% { opacity: 1; } 100% { opacity: 0; } }
+.veil--arriving { opacity: 1; animation: veil-out 2.8s ease forwards; }
+@keyframes veil-out { 0%, 55% { opacity: 1; } 100% { opacity: 0; } }
 .veil__title { text-align: center; opacity: 0; transform: translateY(10px); transition: opacity 0.8s ease 0.2s, transform 1s ease 0.2s; }
 .veil--leaving .veil__title, .veil--arriving .veil__title { opacity: 1; transform: none; }
 .veil__title small { font-size: 12px; letter-spacing: 0.4em; color: color-mix(in srgb, var(--accent) 70%, #fff); }
@@ -948,3 +948,48 @@ button:disabled { cursor: default; }
   .keepsake { box-shadow: none; background: #fff; }
   .keepsake__field textarea { border: 0; resize: none; background: none; }
 }
+
+/* 上のボタン：ナゴリの樹のアイコン */
+.tool__icon { width: 24px; height: 24px; flex: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)); transition: transform 0.2s; }
+.tool:hover .tool__icon { transform: scale(1.12) rotate(-4deg); }
+.tool { padding-left: 6px; }
+
+/* 移動のとき、行き先の絵を画面いっぱいに */
+.veil__picture { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: veil-zoom 4s ease-out both; }
+.veil::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.55) 80%); pointer-events: none; }
+.veil__title { position: relative; z-index: 1; padding: 22px 40px; border-radius: 20px; background: radial-gradient(ellipse, rgba(10, 8, 20, 0.55), transparent 72%); }
+.veil__title h2 { text-shadow: 0 0 30px var(--accent), 0 2px 12px rgba(0, 0, 0, 0.8); }
+@keyframes veil-zoom { from { transform: scale(1.12); filter: blur(4px) brightness(0.8); } to { transform: scale(1.02); filter: none; } }
+
+/* 触れられる場所の目印 */
+.touch-hint { position: absolute; width: 0; height: 0; pointer-events: none; }
+.touch-hint i {
+  position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%;
+  border: 1.5px solid rgba(255, 236, 180, 0.75); box-shadow: 0 0 14px rgba(255, 220, 140, 0.6), inset 0 0 10px rgba(255, 220, 140, 0.4);
+  animation: touch-ring 3.4s ease-out infinite; animation-delay: inherit;
+}
+.touch-hint i::after { content: '✦'; position: absolute; inset: 0; display: grid; place-items: center; color: #fff1c4; font-size: 13px; text-shadow: 0 0 8px #ffcf70; }
+.touch-hint b {
+  position: absolute; left: 50%; top: 26px; transform: translateX(-50%); white-space: nowrap; padding: 2px 9px; border-radius: 999px;
+  font-weight: 400; font-size: 11px; font-family: var(--serif); color: #fff3d6; background: rgba(30, 20, 10, 0.5); opacity: 0; transition: opacity 0.3s;
+}
+.village:hover .touch-hint b { opacity: 0.85; }
+@keyframes touch-ring { 0% { transform: scale(0.6); opacity: 0; } 25% { opacity: 1; } 70% { transform: scale(1.15); opacity: 0.55; } 100% { transform: scale(1.3); opacity: 0; } }
+@media (hover: none) { .touch-hint b { opacity: 0.8; } }
+
+/* 灯籠祭：飛び石を歩く芽の妖精 */
+.stone-walker {
+  position: absolute; transform: translate(-50%, -92%); display: flex; flex-direction: column; align-items: center; pointer-events: none;
+  transition: left 0.9s cubic-bezier(.4,.1,.3,1), top 0.9s cubic-bezier(.4,.1,.3,1), width 0.9s ease;
+}
+.stone-walker__body { display: block; width: 100%; animation: stone-hop 0.9s cubic-bezier(.3,.8,.4,1); }
+.stone-walker__body img { display: block; width: 100%; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 8px rgba(255, 200, 130, 0.35)); animation: walk-bob 0.5s ease-in-out infinite alternate; }
+.stone-walker.is-back .stone-walker__body img { transform: scaleX(-1); }
+.stone-walker.is-me .stone-walker__body img { filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 12px rgba(255, 230, 160, 0.8)); }
+@keyframes stone-hop { 0% { transform: translateY(0); } 45% { transform: translateY(-45%); } 100% { transform: translateY(0); } }
+.stone-walker__name {
+  margin-top: 2px; display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 2px; border-radius: 999px; white-space: nowrap;
+  background: rgba(20, 12, 30, 0.55); color: #fbe9cf; font-size: 11px; font-family: var(--serif);
+}
+.stone-walker__face { width: 16px; height: 16px; border-radius: 50%; overflow: hidden; display: inline-grid; place-items: center; font-size: 11px; }
+.festival__walkers { pointer-events: none; }

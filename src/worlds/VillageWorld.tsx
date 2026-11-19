@@ -7,11 +7,12 @@ import { useActionEffect, useDispatch, useMe, useSession } from '../state/RoomCo
 import { pick } from '../state/util';
 import { WordPrompt } from '../ui/WordPrompt';
 import { CoverStage } from './CoverStage';
-import { VILLAGE_ASPECT, VillageScene } from './VillageScene';
+import { FIRE, SPOTS, VILLAGE_ASPECT, VillageScene, type SpotName } from './VillageScene';
 import { useReactionEffects } from './useReactionEffects';
 
 const IMG = worldAssets.nagori.scenes ?? {};
 const AMBIENT = ['gust', 'lanterns', 'gust', 'library', 'stump'] as const;
+const SPOT_LABEL: Record<SpotName, string> = { stump: '切り株の芽', door: '樹の扉', cellar: '地下への入口', library: '書庫', cottage: '小屋', moon: '月' };
 
 /**
  * ナゴリの樹・根もとの村。樹の家、小屋、図書館、焚き火と、地下へ続く入口。
@@ -74,8 +75,8 @@ export function VillageWorld() {
     } else if (action.fx.startsWith('spot:')) {
       const spot = action.fx.slice(5) as 'stump' | 'door' | 'cellar' | 'library' | 'cottage' | 'moon';
       scene.touch(spot);
-      if (spot === 'library') sound.sample('campfire', 'insight', 0.5) || sound.bell();
-      else if (spot === 'cellar') sound.sample('campfire', 'fog', 0.6) || sound.whoosh();
+      if (spot === 'library') sound.sample('campfire', 'page', 0.8) || sound.bell();
+      else if (spot === 'cellar') sound.sample('campfire', 'open', 0.6) || sound.whoosh();
       else sound.chime(spot === 'moon' ? 3 : 1, undefined, 0.45);
     } else if (action.fx === 'gust') {
       scene.gust();
@@ -103,6 +104,15 @@ export function VillageWorld() {
       onPointerDown={(e) => onPointer(e, 'down')}
     >
       <CoverStage src={IMG.village} aspect={VILLAGE_ASPECT} fallback="linear-gradient(#3a2a52, #6a4a3a 45%, #2a2016)" className="village__stage">
+        {/* 触れられる場所の目印（ほのかに光る輪） */}
+        {[['fire', FIRE.u, FIRE.v - 0.02, '焚き火'] as const, ...(Object.keys(SPOTS) as SpotName[]).map((k) => [k, SPOTS[k].u, SPOTS[k].v, SPOT_LABEL[k]] as const)].map(
+          ([key, u, v, label], i) => (
+            <span key={key} className="touch-hint" style={{ left: `${u * 100}%`, top: `${v * 100}%`, animationDelay: `${i * 0.7}s` }} aria-hidden>
+              <i />
+              <b>{label}</b>
+            </span>
+          ),
+        )}
         {/* 言葉の葉は、樹の枝にとまる */}
         {leaves.map((leaf) => {
           const fresh = Date.now() - leaf.at < 3000;

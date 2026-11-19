@@ -4,7 +4,7 @@ import { Scene, flicker, rand, stepParticles, type Particle } from '../engine/Sc
 
 /** ナゴリの樹・根もとの村の絵の中の位置（0..1） */
 export const VILLAGE_ASPECT = 1672 / 941;
-const FIRE = { u: 0.565, v: 0.6 };
+export const FIRE = { u: 0.565, v: 0.6 };
 const MOON = { u: 0.915, v: 0.115 };
 const CHIMNEY = { u: 0.165, v: 0.3 };
 export const VILLAGE_LANTERNS: [number, number][] = [
@@ -16,7 +16,7 @@ export const VILLAGE_WINDOWS: [number, number][] = [
   [0.385, 0.205], [0.52, 0.175], [0.615, 0.22], [0.45, 0.295], [0.515, 0.325],
   [0.075, 0.505], [0.23, 0.495], [0.175, 0.5], [0.47, 0.49], [0.78, 0.47],
 ];
-const SPOTS = {
+export const SPOTS = {
   stump: { u: 0.325, v: 0.5, r: 0.05 },
   door: { u: 0.47, v: 0.49, r: 0.035 },
   cellar: { u: 0.695, v: 0.79, r: 0.06 },
@@ -24,7 +24,7 @@ const SPOTS = {
   cottage: { u: 0.16, v: 0.49, r: 0.09 },
   moon: { u: 0.915, v: 0.115, r: 0.035 },
 };
-type SpotName = keyof typeof SPOTS;
+export type SpotName = keyof typeof SPOTS;
 
 interface Pulse {
   u: number;
@@ -272,21 +272,45 @@ export class VillageScene extends Scene {
     }
     stepParticles(this.leaves, dt);
 
-    // ── 図書館から舞い出るページ ──
+    // ── 書庫から舞い出るページ：ひらひら裏返りながら、金色の光の粒をこぼして昇る ──
     for (const pg of this.pages) {
-      pg.vy += -6 * dt;
-      pg.x += (pg.vx + Math.sin(t * 2 + pg.seed) * 20) * dt;
+      pg.vy += -4 * dt;
+      pg.x += (pg.vx + Math.sin(t * 1.6 + pg.seed) * 26) * dt;
       pg.y += pg.vy * dt;
-      const a = Math.min(1, pg.life);
+      const a = Math.min(1, pg.life / 1.2, (pg.max - pg.life) * 3);
+      const flip = Math.cos(t * 2.4 + pg.seed * 3);
+      const w = pg.size;
+      const h = pg.size * 1.32;
       ctx.save();
       ctx.translate(pg.x, pg.y);
-      ctx.rotate(Math.sin(t * 3 + pg.seed) * 0.8);
-      ctx.fillStyle = `rgba(250,244,228,${a})`;
-      ctx.fillRect(-pg.size, -pg.size * 0.7, pg.size * 2, pg.size * 1.4);
-      ctx.fillStyle = `rgba(120,100,80,${a * 0.5})`;
-      ctx.fillRect(-pg.size * 0.7, -pg.size * 0.2, pg.size * 1.4, 0.8);
-      ctx.fillRect(-pg.size * 0.7, pg.size * 0.15, pg.size, 0.8);
+      ctx.rotate(Math.sin(t * 1.2 + pg.seed) * 0.5);
+      ctx.scale(Math.max(0.08, Math.abs(flip)), 1);
+      ctx.shadowColor = 'rgba(255,200,120,0.6)';
+      ctx.shadowBlur = 10;
+      const g = ctx.createLinearGradient(-w, 0, w, 0);
+      const face = flip > 0;
+      g.addColorStop(0, face ? `rgba(236,222,190,${a})` : `rgba(214,196,160,${a})`);
+      g.addColorStop(0.5, face ? `rgba(255,250,236,${a})` : `rgba(232,218,188,${a})`);
+      g.addColorStop(1, face ? `rgba(240,228,200,${a})` : `rgba(206,188,150,${a})`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-w, -h);
+      ctx.lineTo(w * 0.7, -h);
+      ctx.quadraticCurveTo(w, -h, w, -h * 0.7);
+      ctx.lineTo(w, h);
+      ctx.lineTo(-w, h);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      if (face) {
+        ctx.fillStyle = `rgba(110,85,60,${a * 0.45})`;
+        for (let i = 0; i < 6; i++) ctx.fillRect(-w * 0.72, -h * 0.65 + i * h * 0.24, w * (i % 3 === 2 ? 0.9 : 1.44), Math.max(0.8, w * 0.06));
+      }
       ctx.restore();
+      if (Math.random() < dt * 10) {
+        const max = rand(0.8, 1.4);
+        this.sparks.push({ x: pg.x, y: pg.y + h, vx: rand(-8, 8), vy: rand(10, 24), life: max, max, size: rand(0.8, 1.5), hue: 45, seed: rand(0, 10) });
+      }
     }
     stepParticles(this.pages, dt);
   }
@@ -348,9 +372,9 @@ export class VillageScene extends Scene {
       this.pulses.push({ u: sp.u, v: sp.v - 0.03, r: 0.05, life: 1.2, hue: 110 });
     } else if (spot === 'library') {
       const q = this.p(sp.u, sp.v);
-      for (let i = 0; i < 10; i++) {
-        const max = rand(2.5, 4);
-        this.pages.push({ x: q.x + rand(-40, 40) * this.s, y: q.y, vx: rand(-30, 30), vy: -rand(30, 60), life: max, max, size: rand(5, 8) * this.s, hue: 0, seed: rand(0, 10) });
+      for (let i = 0; i < 6; i++) {
+        const max = rand(3.5, 5);
+        this.pages.push({ x: q.x + rand(-50, 50) * this.s, y: q.y + rand(-10, 20) * this.s, vx: rand(-24, 24), vy: -rand(18, 34), life: max, max, size: rand(11, 15) * this.s, hue: 0, seed: rand(0, 10) });
       }
       this.pulses.push({ u: sp.u, v: sp.v, r: 0.07, life: 1.2, hue: 40 });
     } else if (spot === 'cellar') {

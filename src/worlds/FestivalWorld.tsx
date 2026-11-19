@@ -5,6 +5,7 @@ import { coverPoint, coverUV } from '../engine/cover';
 import { useActionEffect, useDispatch } from '../state/RoomContext';
 import { CoverStage } from './CoverStage';
 import { FESTIVAL_ASPECT, FestivalScene } from './FestivalScene';
+import { StoneWalkers } from './StoneWalkers';
 import { useReactionEffects } from './useReactionEffects';
 
 const IMG = worldAssets.lantern.scenes ?? {};
@@ -68,6 +69,10 @@ export function FestivalWorld() {
     <div ref={rootRef} className="world world--lantern festival" onPointerDown={onDown}>
       <CoverStage src={IMG.festival} aspect={FESTIVAL_ASPECT} fallback="linear-gradient(#0a0a2a, #4a2250 52%, #2a1838 56%, #05040f)" className="festival__stage" />
       <canvas ref={canvasRef} className="world__canvas world__canvas--fx" />
+      {/* 動く灯籠を描いたキャンバスより上に、飛び石を歩く芽の妖精を重ねる（絵と同じ座標で） */}
+      <CoverStage aspect={FESTIVAL_ASPECT} fallback="transparent" className="festival__stage festival__walkers">
+        <StoneWalkers />
+      </CoverStage>
     </div>
   );
 }

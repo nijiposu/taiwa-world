@@ -11,7 +11,7 @@ export interface SeatInfo {
 /** ホスト2名・ゲスト2名の席。名前とアイコンは入室時に変えられる */
 export const SEATS: SeatInfo[] = [
   { seat: 'host1', role: 'host', label: 'ホスト', defaultName: '虹乃', defaultAvatar: 'img:sprout-lavender' },
-  { seat: 'host2', role: 'host', label: 'ホスト', defaultName: 'ちえ', defaultAvatar: 'img:sprout-sakura' },
+  { seat: 'host2', role: 'host', label: 'ホスト', defaultName: '奏音', defaultAvatar: 'img:sprout-sakura' },
   { seat: 'guest1', role: 'guest', label: 'ゲスト', defaultName: '', defaultAvatar: 'img:sprout-mint' },
   { seat: 'guest2', role: 'guest', label: 'ゲスト', defaultName: '', defaultAvatar: 'img:sprout-sky' },
 ];

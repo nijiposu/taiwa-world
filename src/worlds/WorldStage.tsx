@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { sound } from '../audio/sound';
 import { assetUrl, worldAssets } from '../config/assets';
 import { WORLDS } from '../data/worlds';
+import { worldPicture } from '../ui/recordCard';
 import { useSession } from '../state/RoomContext';
 import type { WorldId } from '../state/types';
 import { BbqWorld } from './BbqWorld';
@@ -21,7 +22,7 @@ const VIEWS: Record<WorldId, () => JSX.Element> = {
 };
 
 const FADE_OUT = 900;
-const HOLD = 700;
+const HOLD = 1600;
 
 type Phase = 'idle' | 'leaving' | 'arriving';
 
@@ -69,6 +70,7 @@ export function WorldStage() {
         style={{ ['--veil' as string]: info.veil, ['--accent' as string]: info.accent }}
         aria-hidden={phase === 'idle'}
       >
+        {worldPicture(target) && <img key={target} className="veil__picture" src={assetUrl(worldPicture(target)!)} alt="" />}
         <div className="veil__title">
           <small>{info.host}</small>
           {logo ? <img src={assetUrl(logo)} alt={info.name} /> : <h2>{info.name}</h2>}

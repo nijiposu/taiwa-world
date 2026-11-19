@@ -29,6 +29,14 @@ interface Star {
   life: number;
 }
 
+/**
+ * 焚き火の色。20秒ごとに次の色へ、ゆっくり移り変わる。
+ * 時計で決めるので、部屋の全員の画面で同じ色になる。
+ * 値は、ふつうの橙色からの色相のずれ（度）
+ */
+const FIRE_TINTS = [0, 175, 95, 245, 300, 30];
+const TINT_PERIOD = 20_000;
+
 const REACTION_HUE: Record<ReactionId, number> = { empathy: 22, more: 48, speak: 200, other: 115 };
 
 /**
@@ -55,6 +63,7 @@ export class HearthScene extends Scene {
   private swarm: { x: number; y: number; t: number } | null = null;
   private px = -1;
   private py = -1;
+  private tint = FIRE_TINTS[Math.floor(Date.now() / TINT_PERIOD) % FIRE_TINTS.length];
 
   constructor(canvas: HTMLCanvasElement) {
     super(canvas);
@@ -101,6 +110,14 @@ export class HearthScene extends Scene {
     this.boost = Math.max(0, this.boost - dt * 0.7);
     this.gustT = Math.max(0, this.gustT - dt);
     const f = flicker(t);
+    // 焚き火の色を、目標の色へなめらかに寄せる（色相は近い向きに回す）
+    const goal = FIRE_TINTS[Math.floor(Date.now() / TINT_PERIOD) % FIRE_TINTS.length];
+    let diff = ((goal - this.tint + 540) % 360) - 180;
+    if (Math.abs(diff) < 0.5) diff = 0;
+    this.tint = (this.tint + diff * Math.min(1, dt * 0.6) + 360) % 360;
+    const tint = this.tint;
+    // 橙色から離れているほど、絵の炎に負けないよう濃く描く
+    const colored = Math.min(1, Math.abs(((tint + 180) % 360) - 180) / 60);
     const heat = 1 + f * 0.14 + this.boost * 0.55;
 
     // ── 低い霧 ──
@@ -119,9 +136,9 @@ export class HearthScene extends Scene {
     // ── 焚き火が地面と木を照らす ──
     const R = (520 + f * 30 + this.boost * 160) * s;
     const glow = ctx.createRadialGradient(fire.x, fire.y, 10 * s, fire.x, fire.y, R);
-    glow.addColorStop(0, `rgba(255,170,80,${0.26 * heat})`);
-    glow.addColorStop(0.4, `rgba(230,110,40,${0.08 * heat})`);
-    glow.addColorStop(1, 'rgba(120,40,10,0)');
+    glow.addColorStop(0, `hsla(${30 + tint},100%,66%,${0.26 * heat})`);
+    glow.addColorStop(0.4, `hsla(${22 + tint},80%,53%,${0.08 * heat})`);
+    glow.addColorStop(1, `hsla(${18 + tint},85%,26%,0)`);
     ctx.fillStyle = glow;
     ctx.fillRect(fire.x - R, fire.y - R, R * 2, R * 2);
 
@@ -144,16 +161,16 @@ export class HearthScene extends Scene {
     while (this.flameAcc > 1) {
       this.flameAcc -= 1;
       const max = rand(0.5, 1) * (1 + this.boost * 0.5);
-      this.flames.push({ x: fire.x + rand(-26, 26) * s * rand(0.3, 1), y: fire.y - 18 * s, vx: rand(-6, 6), vy: -rand(70, 120) * s * (1 + this.boost * 0.32), life: max, max, size: rand(14, 24) * s * (1 + this.boost * 0.15), hue: 0, seed: rand(0, 10) });
+      this.flames.push({ x: fire.x + rand(-26, 26) * s * rand(0.3, 1), y: fire.y - 18 * s, vx: rand(-6, 6), vy: -rand(70, 120) * s * (1 + this.boost * 0.32), life: max, max, size: rand(14, 24) * s * (1 + this.boost * 0.15 + colored * 0.25), hue: 0, seed: rand(0, 10) });
     }
     for (const p of this.flames) {
       const k = 1 - p.life / p.max;
       p.x += (p.vx + Math.sin(t * 3 + p.seed) * 10 + (fire.x - p.x) * 1.6) * dt;
       p.y += p.vy * dt;
       const size = p.size * (1 - k * 0.8);
-      const hue = 46 - k * 38;
+      const hue = 46 - k * 38 + tint;
       const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, size);
-      g.addColorStop(0, `hsla(${hue},100%,${66 - k * 25}%,${(1 - k) * 0.36})`);
+      g.addColorStop(0, `hsla(${hue},100%,${66 - k * 25}%,${(1 - k) * 0.36 * (1 + colored * 0.7)})`);
       g.addColorStop(1, `hsla(${hue - 10},100%,40%,0)`);
       ctx.fillStyle = g;
       ctx.beginPath();
@@ -167,7 +184,7 @@ export class HearthScene extends Scene {
     while (this.emberAcc > 1) {
       this.emberAcc -= 1;
       const max = rand(2, 4.5);
-      this.embers.push({ x: fire.x + rand(-20, 20) * s, y: fire.y - 30 * s, vx: rand(-20, 20), vy: -rand(40, 95) * s, life: max, max, size: rand(0.9, 2.2), hue: rand(20, 45), seed: rand(0, 10) });
+      this.embers.push({ x: fire.x + rand(-20, 20) * s, y: fire.y - 30 * s, vx: rand(-20, 20), vy: -rand(40, 95) * s, life: max, max, size: rand(0.9, 2.2), hue: rand(20, 45) + tint, seed: rand(0, 10) });
     }
     this.drawSparkList(this.embers, dt, -4);
     this.drawSparkList(this.sparks, dt, 55);

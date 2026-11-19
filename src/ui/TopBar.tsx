@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { sound } from '../audio/sound';
+import { assetUrl } from '../config/assets';
 import { workLink } from '../config/links';
 import { WORLDS } from '../data/worlds';
 import { useConnection, useMe, useSession } from '../state/RoomContext';
@@ -47,25 +48,25 @@ export function TopBar({ open }: { open: (p: Panel) => void }) {
           aria-pressed={soundOn}
           title={soundOn ? '音を消す' : '音を鳴らす'}
         >
-          <span aria-hidden>{soundOn ? '🔔' : '🔕'}</span>
+          <img className="tool__icon" src={assetUrl('assets/nagori-ui/icon-lantern.webp')} alt="" style={{ opacity: soundOn ? 1 : 0.45 }} />
           <span className="tool__label">音</span>
         </button>
         <button className="tool" onClick={() => open('map')} title="世界の地図">
-          <span aria-hidden>🗺️</span>
+          <img className="tool__icon" src={assetUrl('assets/nagori-ui/icon-compass.webp')} alt="" />
           <span className="tool__label">地図</span>
         </button>
         <button className="tool" onClick={() => open('record')} title="今日の記録">
-          <span aria-hidden>📖</span>
+          <img className="tool__icon" src={assetUrl('assets/nagori-ui/icon-notebook.webp')} alt="" />
           <span className="tool__label">記録</span>
         </button>
         {me.role === 'host' && (
           <button className="tool" onClick={() => open('host')} title="進行メニュー">
-            <span aria-hidden>🧭</span>
+            <img className="tool__icon" src={assetUrl('assets/nagori-ui/icon-record.webp')} alt="" />
             <span className="tool__label">進行</span>
           </button>
         )}
         <button className="tool" onClick={() => open('help')} title="この場所について">
-          <span aria-hidden>？</span>
+          <img className="tool__icon" src={assetUrl('assets/nagori-ui/icon-hint.webp')} alt="" />
         </button>
       </div>
     </header>
