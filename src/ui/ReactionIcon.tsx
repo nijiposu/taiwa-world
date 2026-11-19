@@ -12,19 +12,15 @@ const NAGORI_STAMPS: Record<ReactionId, string> = {
 
 /**
  * リアクションの見た目を、いる世界に合わせて変える。
- * 樹のエリア：ナゴリの樹のスタンプ／灯籠祭：提灯の中に灯る印／それ以外：絵文字
+ * 樹のエリア：ナゴリの樹のスタンプ／灯籠祭：夜空のしずくの印／それ以外：絵文字
  */
 export function ReactionIcon({ reaction, world }: { reaction: ReactionId; world: WorldId }) {
-  const info = REACTION_BY_ID[reaction];
   if (world === 'campfire' || world === 'nagori') {
     return <img className="r-icon r-icon--stamp" src={assetUrl(NAGORI_STAMPS[reaction])} alt="" draggable={false} />;
   }
   if (world === 'lantern') {
-    return (
-      <span className="r-icon r-icon--chochin" style={{ ['--c' as string]: info.color }}>
-        <i>{info.emoji}</i>
-      </span>
-    );
+    // 灯籠祭：夜空のしずくの中に灯る印（ちえさんの作品の仕掛けは使わない）
+    return <img className="r-icon r-icon--stamp" src={assetUrl(`assets/festival-ui/${reaction}.svg`)} alt="" draggable={false} />;
   }
-  return <span className="r-icon">{info.emoji}</span>;
+  return <span className="r-icon">{REACTION_BY_ID[reaction].emoji}</span>;
 }

@@ -61,12 +61,7 @@ function Landmark({ id }: { id: string }) {
           <rect x="-38" y="-42" width="76" height="6" fill="#d2453a" />
           <rect x="-34" y="-50" width="8" height="70" fill="#b83a30" />
           <rect x="26" y="-50" width="8" height="70" fill="#b83a30" />
-          {[-60, 60].map((x) => (
-            <g key={x} className="atlas-sway">
-              <line x1={x} y1="-70" x2={x} y2="-58" stroke="#331" />
-              <ellipse cx={x} cy="-48" rx="10" ry="13" fill="#ff9a50" />
-            </g>
-          ))}
+          <ellipse cx="0" cy="22" rx="70" ry="8" fill="rgba(255,200,140,.25)" className="atlas-glow-soft" />
         </g>
       );
     case 'moon':

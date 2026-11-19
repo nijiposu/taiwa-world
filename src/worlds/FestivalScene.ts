@@ -1,78 +1,52 @@
-import type { Keepsake, ReactionId } from '../state/types';
+import type { ReactionId } from '../state/types';
 import { coverPoint, coverRect } from '../engine/cover';
-import { Scene, clamp, flicker, rand, stepParticles, type Particle } from '../engine/Scene';
+import { Scene, flicker, rand, stepParticles, type Particle } from '../engine/Scene';
 
 /** ちえさんの灯籠祭の絵の中の位置。0..1 */
 export const FESTIVAL_ASPECT = 1672 / 941;
 const HORIZON = 0.555;
 const TORII = { u: 0.5, v: 0.53 };
 const SUN = { u: 0.5, v: 0.545 };
-/** 水面に浮かぶ灯籠（絵に描かれているもの） */
-export const WATER_LANTERNS: [number, number, number][] = [
-  // u, v, 大きさ
-  [0.064, 0.62, 1], [0.198, 0.625, 1], [0.91, 0.685, 1.7], [0.82, 0.615, 0.9], [0.655, 0.61, 0.8],
-  [0.69, 0.6, 0.7], [0.762, 0.6, 0.6], [0.23, 0.59, 0.6], [0.28, 0.59, 0.6], [0.022, 0.58, 0.5],
-  [0.07, 0.58, 0.5], [0.97, 0.59, 0.6], [0.12, 0.578, 0.5], [0.16, 0.578, 0.5], [0.6, 0.588, 0.5],
-];
-/** 流した灯籠が、飛び石のわきから鳥居へ向かう道すじ */
-const DRIFT_FROM = { u: 0.42, v: 0.86 };
-const DRIFT_TO = { u: 0.505, v: 0.572 };
-const PALETTE = [8, 22, 38, 48, 330, 280, 195];
-
-interface Rocket {
-  x: number;
-  y: number;
-  vy: number;
-  ty: number;
-  hue: number;
-  size: number;
-  trail: { x: number; y: number }[];
-}
-
-interface SkyLantern {
-  x: number;
-  y: number;
-  vy: number;
-  size: number;
-  seed: number;
-  life: number;
-}
-
-interface Drifter {
-  id: string;
-  text: string;
-  k: number;
-  rise: number;
-  seed: number;
-}
+/** 天の川（流れ星が通る） */
+const MILKY = { u0: 0.22, u1: 0.5, v0: 0.02, v1: 0.3 };
 
 interface Ring {
   x: number;
   y: number;
   r: number;
   life: number;
+  hue: number;
+}
+
+interface Star {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+}
+
+interface Twinkle {
+  u: number;
+  v: number;
+  size: number;
+  seed: number;
 }
 
 /**
- * 灯籠祭：星空と夕焼けの湖、鳥居、浮かぶ灯籠の絵に重ねる演出。
- * 空へ昇る灯籠、湖に映る花火、水面のきらめきと波紋。流した灯籠は鳥居まで流れて、空へ昇る。
+ * 灯籠祭（ちえさんの世界）の絵に重ねる、静かな演出。
+ * ちえさんの作品の仕掛け（灯籠・おみくじ・花火・風鈴）はネタバレになるので使わない。
+ * 星のまたたき、流れ星、湖のきらめきと波紋、夕日、水面をすべる霧だけで、絵を呼吸させる。
  */
 export class FestivalScene extends Scene {
-  private rockets: Rocket[] = [];
-  private sparks: Particle[] = [];
   private glints: Particle[] = [];
-  private sky: SkyLantern[] = [];
-  private drifters: Drifter[] = [];
+  private mist: Particle[] = [];
   private rings: Ring[] = [];
-  private known = new Set<string>();
-  private pulse = WATER_LANTERNS.map(() => 0);
-  private seeds = WATER_LANTERNS.map(() => rand(0, 10));
-  private toriiGlow = 0;
-  private flash = 0;
-  private nextRocket = 3;
-  private nextStar = 6;
-  private skyAcc = 0;
-  private stars: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
+  private stars: Star[] = [];
+  private twinkles: Twinkle[] = [];
+  private sunGlow = 0;
+  private path = 0;
+  private nextStar = 4;
 
   constructor(canvas: HTMLCanvasElement) {
     super(canvas);
@@ -93,68 +67,78 @@ export class FestivalScene extends Scene {
     return this.p(0, HORIZON).y;
   }
 
-  /** みんなが流した灯籠を、湖に浮かべる */
-  syncLanterns(list: Keepsake[]) {
-    for (const k of list) {
-      if (this.known.has(k.id)) continue;
-      this.known.add(k.id);
-      // 前から流れていた灯籠は、もう空に昇ったことにする
-      if (Date.now() - k.at > 8000) continue;
-      this.drifters.push({ id: k.id, text: k.text, k: 0, rise: 0, seed: rand(0, 10) });
-    }
+  protected layout() {
+    if (this.twinkles.length) return;
+    for (let i = 0; i < 90; i++) this.twinkles.push({ u: rand(0, 1), v: Math.pow(Math.random(), 1.4) * 0.42, size: rand(0.6, 1.8), seed: rand(0, 100) });
+    for (let i = 0; i < 6; i++) this.mist.push(this.mistBank(true));
+  }
+
+  private mistBank(anywhere = false): Particle {
+    const q = this.p(anywhere ? rand(0, 1) : -0.25, rand(HORIZON - 0.03, HORIZON + 0.06));
+    return { x: q.x, y: q.y, vx: rand(5, 11), vy: 0, life: 1e9, max: 1e9, size: rand(180, 320), hue: 0, seed: rand(0, 10) };
   }
 
   protected frame(dt: number) {
-    const { ctx, t, w } = this;
+    const { ctx, t } = this;
     const s = this.s;
     const wy = this.waterY;
+
+    // ── 水面をすべる霧 ──
+    for (const m of this.mist) {
+      m.x += m.vx * dt;
+      if (m.x - m.size * s > this.w) Object.assign(m, this.mistBank());
+      const g = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.size * s);
+      g.addColorStop(0, 'rgba(230,200,240,0.08)');
+      g.addColorStop(1, 'rgba(230,200,240,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(m.x - m.size * s, m.y - m.size * s * 0.4, m.size * 2 * s, m.size * 0.8 * s);
+    }
+
     ctx.globalCompositeOperation = 'lighter';
 
-    // ── 夕日と鳥居のあかり ──
-    this.toriiGlow = Math.max(0, this.toriiGlow - dt * 0.6);
+    // ── 星のまたたき ──
+    for (const tw of this.twinkles) {
+      const q = this.p(tw.u, tw.v);
+      const a = Math.max(0, Math.sin(t * (0.8 + (tw.seed % 2)) + tw.seed)) ** 3;
+      ctx.fillStyle = `rgba(255,248,230,${a * 0.85})`;
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, tw.size * (0.6 + a * 0.6), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ── 夕日と、鳥居から手前へのびる光の道 ──
+    this.sunGlow = Math.max(0, this.sunGlow - dt * 0.5);
+    this.path = Math.max(0, this.path - dt * 0.35);
     const sun = this.p(SUN.u, SUN.v);
-    const R = (260 + flicker(t * 0.5) * 20 + this.toriiGlow * 220) * s;
+    const R = (260 + flicker(t * 0.4) * 20 + this.sunGlow * 240) * s;
     const g = ctx.createRadialGradient(sun.x, sun.y, 0, sun.x, sun.y, R);
-    g.addColorStop(0, `rgba(255,200,120,${0.22 + this.toriiGlow * 0.35})`);
+    g.addColorStop(0, `rgba(255,200,120,${0.2 + this.sunGlow * 0.35})`);
     g.addColorStop(1, 'rgba(255,140,60,0)');
     ctx.fillStyle = g;
     ctx.fillRect(sun.x - R, sun.y - R, R * 2, R * 2);
-
-    // 花火の光で、空と湖がほのかに明るくなる
-    if (this.flash > 0) {
-      ctx.fillStyle = `rgba(255,190,170,${this.flash * 0.06})`;
-      ctx.fillRect(0, 0, w, this.h);
-      this.flash = Math.max(0, this.flash - dt * 1.2);
+    if (this.path > 0) {
+      const near = this.p(SUN.u, 1);
+      const lg = ctx.createLinearGradient(0, wy, 0, near.y);
+      lg.addColorStop(0, `rgba(255,210,140,${0.5 * this.path})`);
+      lg.addColorStop(1, 'rgba(255,170,90,0)');
+      ctx.fillStyle = lg;
+      ctx.beginPath();
+      ctx.moveTo(sun.x - 8 * s, wy);
+      ctx.lineTo(sun.x + 8 * s, wy);
+      ctx.lineTo(near.x + 160 * s, near.y);
+      ctx.lineTo(near.x - 160 * s, near.y);
+      ctx.fill();
     }
 
-    // ── 水面の灯籠がゆらぐ ──
-    WATER_LANTERNS.forEach(([u, v, size], i) => {
-      this.pulse[i] = Math.max(0, this.pulse[i] - dt * 0.7);
-      const q = this.p(u, v);
-      const k = 0.7 + flicker(t * 0.9, this.seeds[i]) * 0.2 + this.pulse[i] * 1.4;
-      const r = (34 + this.pulse[i] * 60) * s * size;
-      const lg = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, r);
-      lg.addColorStop(0, `rgba(255,214,140,${0.4 * k})`);
-      lg.addColorStop(1, 'rgba(255,170,70,0)');
-      ctx.fillStyle = lg;
-      ctx.fillRect(q.x - r, q.y - r, r * 2, r * 2);
-      // 揺れる映り込み
-      for (let j = 0; j < 4; j++) {
-        const ww = (14 - j * 2) * s * size + Math.sin(t * 3 + j + i) * 2;
-        ctx.fillStyle = `rgba(255,190,110,${0.12 * k})`;
-        ctx.fillRect(q.x - ww / 2, q.y + (12 + j * 9) * s * size, ww, 2 * s * size);
-      }
-    });
-
-    // ── 夕日の映り込みにきらめき ──
-    if (Math.random() < dt * 14 * this.density) {
+    // ── 湖のきらめき（夕日の映り込みに沿って） ──
+    if (Math.random() < dt * 16 * this.density) {
       const v = rand(HORIZON + 0.01, 0.98);
       const spread = 0.02 + (v - HORIZON) * 0.12;
       const q = this.p(SUN.u + rand(-spread, spread), v);
       const max = rand(0.4, 1.1);
       this.glints.push({ x: q.x, y: q.y, vx: 0, vy: 0, life: max, max, size: rand(6, 18) * s * (0.5 + (v - HORIZON) * 2), hue: 38, seed: 0 });
     }
-    if (Math.random() < dt * 6 * this.density) {
+    if (Math.random() < dt * 7 * this.density) {
       const q = this.p(rand(0, 1), rand(HORIZON + 0.02, 0.98));
       const max = rand(0.5, 1.2);
       this.glints.push({ x: q.x, y: q.y, vx: 0, vy: 0, life: max, max, size: rand(5, 12) * s, hue: rand(250, 290), seed: 0 });
@@ -175,87 +159,18 @@ export class FestivalScene extends Scene {
         this.rings.splice(i, 1);
         continue;
       }
-      ctx.strokeStyle = `rgba(255,230,190,${r.life * 0.35})`;
+      ctx.strokeStyle = `hsla(${r.hue},80%,82%,${r.life * 0.35})`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.ellipse(r.x, r.y, r.r, r.r * 0.28, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // ── 空へ昇る灯籠（絶えず少しずつ） ──
-    this.skyAcc += dt * 0.9 * this.density;
-    while (this.skyAcc > 1) {
-      this.skyAcc -= 1;
-      const q = this.p(rand(0.38, 0.72), rand(0.38, 0.5));
-      this.sky.push({ x: q.x, y: q.y, vy: rand(6, 14) * s, size: rand(2, 5) * s, seed: rand(0, 10), life: rand(14, 22) });
-    }
-    for (let i = this.sky.length - 1; i >= 0; i--) {
-      const l = this.sky[i];
-      l.life -= dt;
-      l.y -= l.vy * dt;
-      l.x += Math.sin(t * 0.5 + l.seed) * 4 * dt + 3 * dt;
-      l.size += dt * 0.05 * s;
-      if (l.life <= 0 || l.y < -20) {
-        this.sky.splice(i, 1);
-        continue;
-      }
-      this.drawSkyLantern(l.x, l.y, l.size, Math.min(1, l.life / 3), l.seed);
-    }
-
-    // ── 花火 ──
-    this.nextRocket -= dt;
-    if (this.nextRocket <= 0) {
-      this.launch();
-      if (Math.random() > 0.7) window.setTimeout(() => this.launch(), 400);
-      this.nextRocket = rand(5, 11);
-    }
-    for (let i = this.rockets.length - 1; i >= 0; i--) {
-      const r = this.rockets[i];
-      r.trail.push({ x: r.x, y: r.y });
-      if (r.trail.length > 10) r.trail.shift();
-      r.y += r.vy * dt;
-      r.vy *= 1 - dt * 0.5;
-      ctx.strokeStyle = `hsla(${r.hue},90%,75%,0.55)`;
-      ctx.lineWidth = 1.6;
-      ctx.beginPath();
-      r.trail.forEach((pt, j) => (j ? ctx.lineTo(pt.x, pt.y) : ctx.moveTo(pt.x, pt.y)));
-      ctx.stroke();
-      if (r.y <= r.ty || r.vy > -60) {
-        this.explode(r);
-        this.rockets.splice(i, 1);
-      }
-    }
-    for (const p of this.sparks) {
-      const k = 1 - p.life / p.max;
-      p.vx *= 1 - dt * 1.6;
-      p.vy = p.vy * (1 - dt * 1.6) + 60 * dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      const a = (1 - k) * (k > 0.6 ? 0.5 + 0.5 * Math.sin(t * 30 + p.seed * 9) : 1);
-      ctx.fillStyle = `hsla(${p.hue},95%,65%,${a * 0.25})`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = `hsla(${p.hue},100%,${80 - k * 20}%,${a})`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
-      // 湖に映る
-      if (p.y < wy) {
-        const ry = wy + (wy - p.y) * 0.45;
-        if (ry < this.h) {
-          ctx.fillStyle = `hsla(${p.hue},90%,65%,${a * 0.14})`;
-          ctx.fillRect(p.x - 3, ry, 6, 1.4);
-        }
-      }
-    }
-    stepParticles(this.sparks, dt);
-
     // ── 流れ星（天の川にそって） ──
     this.nextStar -= dt;
     if (this.nextStar <= 0) {
       this.shootingStar();
-      this.nextStar = rand(8, 16);
+      this.nextStar = rand(6, 13);
     }
     for (let i = this.stars.length - 1; i >= 0; i--) {
       const st = this.stars[i];
@@ -276,168 +191,62 @@ export class FestivalScene extends Scene {
       ctx.moveTo(st.x, st.y);
       ctx.lineTo(st.x - st.vx * 0.2, st.y - st.vy * 0.2);
       ctx.stroke();
+      // 湖にも映る
+      const ry = wy + (wy - st.y) * 0.45;
+      if (ry < this.h) {
+        ctx.fillStyle = `rgba(255,250,235,${a * 0.18})`;
+        ctx.fillRect(st.x - 6, ry, 12, 1.4);
+      }
     }
 
-    // ── 流した灯籠：鳥居まで流れて、空へ昇る ──
-    for (let i = this.drifters.length - 1; i >= 0; i--) {
-      const d = this.drifters[i];
-      if (d.k < 1) d.k = Math.min(1, d.k + dt / 14);
-      else d.rise += dt;
-      const e = 1 - Math.pow(1 - d.k, 1.6);
-      const a = this.p(DRIFT_FROM.u, DRIFT_FROM.v);
-      const b = this.p(DRIFT_TO.u, DRIFT_TO.v);
-      let x = a.x + (b.x - a.x) * e + Math.sin(t * 0.8 + d.seed) * 6 * (1 - e) * s;
-      let y = a.y + (b.y - a.y) * e + Math.sin(t * 1.3 + d.seed) * 2 * s;
-      let size = (34 * (1 - e) + 5) * s;
-      let alpha = 1;
-      if (d.rise > 0) {
-        x += Math.sin(t * 0.7 + d.seed) * 10 * s + d.rise * 6 * s;
-        y -= d.rise * d.rise * 6 * s + d.rise * 16 * s;
-        size = 5 * s + d.rise * 0.3 * s;
-        alpha = clamp(1 - d.rise / 18, 0, 1);
-        if (alpha <= 0) {
-          this.drifters.splice(i, 1);
-          continue;
-        }
-        this.drawSkyLantern(x, y, size, alpha, d.seed);
-      } else {
-        this.drawWaterLantern(x, y, size);
-        if (Math.random() < dt * 2) this.rings.push({ x, y: y + size * 0.15, r: size * 0.6, life: 1 });
-      }
-      if (d.text) {
-        const fade = d.rise > 0 ? alpha * 0.8 : Math.min(1, d.k * 6);
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.font = `${Math.round(14 + 6 * (1 - e))}px "Zen Old Mincho", serif`;
-        ctx.textAlign = 'center';
-        ctx.fillStyle = `rgba(255,240,215,${fade})`;
-        ctx.shadowColor = 'rgba(255,150,80,0.9)';
-        ctx.shadowBlur = 12;
-        ctx.fillText(d.text, x, y - size * 1.4 - 10);
-        ctx.shadowBlur = 0;
-        ctx.globalCompositeOperation = 'lighter';
-      }
-    }
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  private drawSkyLantern(x: number, y: number, size: number, alpha: number, seed: number) {
-    const { ctx, t } = this;
-    const k = (0.8 + flicker(t, seed) * 0.15) * alpha;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, size * 5);
-    g.addColorStop(0, `rgba(255,200,120,${0.45 * k})`);
-    g.addColorStop(1, 'rgba(255,150,60,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(x - size * 5, y - size * 5, size * 10, size * 10);
-    ctx.fillStyle = `rgba(255,224,160,${0.95 * k})`;
-    ctx.beginPath();
-    ctx.moveTo(x - size * 0.8, y - size);
-    ctx.lineTo(x + size * 0.8, y - size);
-    ctx.lineTo(x + size * 0.55, y + size);
-    ctx.lineTo(x - size * 0.55, y + size);
-    ctx.closePath();
-    ctx.fill();
+  shootingStar(x?: number, y?: number) {
+    const q = x === undefined || y === undefined ? this.p(rand(MILKY.u0, MILKY.u1), rand(MILKY.v0, MILKY.v1 - 0.12)) : { x, y };
+    this.stars.push({ x: q.x, y: q.y, vx: -rand(260, 380), vy: rand(200, 300), life: 1 });
   }
 
-  private drawWaterLantern(x: number, y: number, size: number) {
-    const { ctx, t } = this;
-    const k = 0.85 + Math.sin(t * 3) * 0.1;
-    const g = ctx.createRadialGradient(x, y - size * 0.5, 0, x, y - size * 0.5, size * 3);
-    g.addColorStop(0, `rgba(255,200,120,${0.5 * k})`);
-    g.addColorStop(1, 'rgba(255,150,60,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(x - size * 3, y - size * 3.5, size * 6, size * 6);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = '#3a2216';
-    ctx.fillRect(x - size * 0.7, y - size * 0.08, size * 1.4, size * 0.16);
-    const paper = ctx.createLinearGradient(x - size / 2, 0, x + size / 2, 0);
-    paper.addColorStop(0, `rgba(255,190,110,${k})`);
-    paper.addColorStop(0.5, `rgba(255,240,200,${k})`);
-    paper.addColorStop(1, `rgba(255,190,110,${k})`);
-    ctx.fillStyle = paper;
-    ctx.fillRect(x - size / 2, y - size, size, size * 0.92);
-    ctx.globalCompositeOperation = 'lighter';
-    for (let j = 0; j < 4; j++) {
-      ctx.fillStyle = `rgba(255,200,120,${0.25 * k})`;
-      ctx.fillRect(x - size * (0.45 - j * 0.08), y + size * (0.2 + j * 0.3), size * (0.9 - j * 0.16), size * 0.08);
-    }
-  }
-
-  launch(x?: number, ty?: number, hue?: number, size = 1) {
-    const s = this.s;
-    const q = this.p(rand(0.2, 0.8), HORIZON);
-    this.rockets.push({
-      x: x ?? q.x,
-      y: this.waterY,
-      vy: -rand(520, 640) * Math.max(0.7, s),
-      ty: ty ?? this.p(0, rand(0.08, 0.3)).y,
-      hue: hue ?? PALETTE[Math.floor(Math.random() * PALETTE.length)],
-      size,
-      trail: [],
-    });
-  }
-
-  private explode(r: Rocket) {
-    const n = Math.round((70 + Math.random() * 50) * this.density * r.size + 20);
-    const ring = Math.random() > 0.6;
-    const speed = rand(140, 220) * r.size * Math.max(0.7, Math.min(1.3, this.s));
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 + rand(-0.05, 0.05);
-      const v = ring ? speed : speed * Math.sqrt(Math.random());
-      const max = rand(1.4, 2.4);
-      this.sparks.push({ x: r.x, y: r.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: max, max, size: rand(1.2, 2.2), hue: r.hue + rand(-12, 12), seed: rand(0, 10) });
-    }
-    this.flash = Math.min(1, this.flash + 0.35 * r.size);
-  }
-
-  shootingStar() {
-    const q = this.p(rand(0.25, 0.5), rand(0.02, 0.15));
-    this.stars.push({ x: q.x, y: q.y, vx: -rand(260, 380), vy: rand(220, 300), life: 1 });
-  }
-
-  /** 鳥居に触れる：夕日が強まり、水面の灯籠が奥から手前へ順に灯る */
+  /** 鳥居に触れる：夕日が強まり、湖に光の道がのびる */
   torii() {
-    this.toriiGlow = 1;
-    const order = WATER_LANTERNS.map((l, i) => [l[1], i] as const).sort((a, b) => a[0] - b[0]);
-    order.forEach(([, i], k) => window.setTimeout(() => (this.pulse[i] = 1), k * 120));
-    const q = this.p(TORII.u, TORII.v);
-    for (let i = 0; i < 4; i++) window.setTimeout(() => this.rings.push({ x: q.x, y: this.p(0, 0.575).y, r: 10, life: 1.6 }), i * 300);
+    this.sunGlow = 1;
+    this.path = 1;
+    const q = this.p(TORII.u, 0.575);
+    for (let i = 0; i < 4; i++) window.setTimeout(() => this.rings.push({ x: q.x, y: q.y, r: 10, life: 1.6, hue: 38 }), i * 300);
   }
 
-  /** 水面の灯籠に触れる：そこから一つ、空へ昇る */
-  release(i: number) {
-    this.pulse[i] = 1;
-    const [u, v, size] = WATER_LANTERNS[i];
-    const q = this.p(u, v);
-    this.sky.push({ x: q.x, y: q.y - 20 * this.s * size, vy: rand(26, 40) * this.s, size: 6 * this.s * size, seed: rand(0, 10), life: 16 });
-    this.rings.push({ x: q.x, y: q.y + 6 * this.s * size, r: 12 * this.s * size, life: 1.4 });
+  ripple(x: number, y: number, hue = 30) {
+    for (let i = 0; i < 3; i++) window.setTimeout(() => this.rings.push({ x, y, r: 4, life: 1.4, hue }), i * 180);
+    for (let i = 0; i < 8; i++) {
+      const max = rand(0.5, 1.1);
+      this.glints.push({ x: x + rand(-40, 40) * this.s, y: y + rand(-6, 10) * this.s, vx: 0, vy: 0, life: max, max, size: rand(6, 14) * this.s, hue: hue + 8, seed: 0 });
+    }
   }
 
-  ripple(x: number, y: number) {
-    for (let i = 0; i < 3; i++) window.setTimeout(() => this.rings.push({ x, y, r: 4, life: 1.4 }), i * 180);
-  }
-
-  /** たくさんの灯籠が、いっせいに空へ */
-  flock(count = 14) {
+  /** 湖じゅうがきらめく */
+  shimmer(hue: number, count = 60) {
     for (let i = 0; i < count; i++) {
-      const q = this.p(rand(0.3, 0.75), rand(0.5, 0.62));
-      this.sky.push({ x: q.x, y: q.y, vy: rand(22, 40) * this.s, size: rand(3, 6) * this.s, seed: rand(0, 10), life: rand(12, 18) });
+      const q = this.p(rand(0, 1), rand(HORIZON + 0.02, 0.98));
+      const max = rand(0.6, 1.6);
+      this.glints.push({ x: q.x, y: q.y, vx: 0, vy: 0, life: max, max, size: rand(8, 20) * this.s, hue, seed: 0 });
     }
   }
 
   reaction(id: ReactionId) {
     switch (id) {
       case 'empathy':
-        this.launch(undefined, undefined, 18, 0.9);
+        this.ripple(this.p(rand(0.3, 0.7), rand(0.65, 0.85)).x, this.p(0, rand(0.65, 0.85)).y, 25);
+        this.sunGlow = Math.max(this.sunGlow, 0.5);
         break;
       case 'more':
-        this.flock(16);
+        this.shootingStar();
+        window.setTimeout(() => this.shootingStar(), 350);
         break;
       case 'speak':
-        this.launch(this.p(0.5, 0).x, this.p(0, 0.16).y, 200, 1.5);
         this.torii();
         break;
       case 'other':
-        this.launch(undefined, undefined, 130, 1);
+        this.shimmer(170, 70);
         break;
     }
   }
@@ -447,11 +256,6 @@ export class FestivalScene extends Scene {
     const s = this.s;
     const torii = this.p(TORII.u, TORII.v);
     if (Math.abs(x - torii.x) < 70 * s && Math.abs(y - torii.y) < 60 * s) return 'torii';
-    for (let i = 0; i < WATER_LANTERNS.length; i++) {
-      const [u, v, size] = WATER_LANTERNS[i];
-      const q = this.p(u, v);
-      if (Math.hypot(x - q.x, y - q.y) < 32 * s * size + 10) return `lantern:${i}`;
-    }
     return y < this.waterY ? 'sky' : 'water';
   }
 }

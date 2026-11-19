@@ -140,7 +140,8 @@ class SoundEngine {
         bed.gain.linearRampToValueAtTime(0.03 + Math.random() * 0.06, t + 1.5);
         if (Math.random() < 0.08) this.tone(out, 2400 + Math.random() * 800, 0.08, 0.03, 'sine');
       }
-      if (world === 'lantern' && Math.random() < 0.06) this.chime(1 + Math.floor(Math.random() * 3), out, 0.4);
+      // 灯籠祭は、湖の水音と遠くの虫の声だけ（ちえさんの作品の音はネタバレになるので使わない）
+      if (world === 'lantern' && Math.random() < 0.05) this.tone(out, 3200 + Math.random() * 600, 0.06, 0.02, 'sine');
     }, 260);
 
     this.ambient = {

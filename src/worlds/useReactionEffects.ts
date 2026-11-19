@@ -8,6 +8,5 @@ export function useReactionEffects(world: WorldId, scene: { reaction(id: Reactio
     if (action.type !== 'react' || action.event.world !== world || !scene) return;
     scene.reaction(action.event.reaction);
     sound.pop(action.event.reaction === 'speak' ? 1.3 : 1);
-    if (world === 'lantern') sound.boom();
   });
 }

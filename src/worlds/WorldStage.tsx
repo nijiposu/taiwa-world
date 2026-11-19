@@ -6,7 +6,7 @@ import { useSession } from '../state/RoomContext';
 import type { WorldId } from '../state/types';
 import { BbqWorld } from './BbqWorld';
 import { CampfireWorld } from './CampfireSwitch';
-import { LanternWorld } from './LanternSwitch';
+import { FestivalWorld as LanternWorld } from './FestivalWorld';
 import { MinasokoWorld } from './MinasokoWorld';
 import { NagoriWorld } from './NagoriWorld';
 import { TownWorld } from './TownWorld';

@@ -26,7 +26,7 @@ export const WORLDS: Record<WorldId, WorldInfo> = {
     name: '灯籠祭',
     subtitle: '−心の旅路−',
     host: 'ちえさんの世界',
-    description: '灯籠が水面を流れ、夜空に花火がひらく。風鈴の音に、問いが揺れる。',
+    description: '星空と夕焼けの湖に、鳥居が静かに立っている。続きは、ちえさんの作品で。',
     accent: '#ff8f6b',
     veil: '#0b0a1f',
   },

@@ -22,7 +22,7 @@ export function Help({ onClose, roomId, onChangeSeat }: { onClose: () => void; r
         <ul>
           <li>樹の下の焚き火：焚き火や夜空に触れてみて。ここが集合場所です</li>
           <li>ナゴリの樹：幹に触れると問い、葉にことばを残せます</li>
-          <li>灯籠祭：風鈴・おみくじでお題、灯籠にひとことを</li>
+          <li>灯籠祭：湖と鳥居。空や水面に触れてみて</li>
         </ul>
         <p className="muted">ルーム：{roomId}（試作版のため、同じブラウザの別タブ同士でだけ同期します）</p>
         <button className="btn btn--ghost btn--small" onClick={onChangeSeat}>
