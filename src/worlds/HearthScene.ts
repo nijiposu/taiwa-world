@@ -284,6 +284,8 @@ export class HearthScene extends Scene {
     }
     ctx.globalCompositeOperation = 'source-over';
 
+    this.drawPlay(dt);
+
     // ── 舞う葉と花びら ──
     for (const l of this.leaves) {
       l.x += (l.vx + Math.sin(t * 1.4 + l.seed) * 30 + this.gustT * 120) * dt;
@@ -407,6 +409,127 @@ export class HearthScene extends Scene {
   /** 地面に触れたとき：小さな光の輪 */
   ripple(x: number, y: number) {
     this.burstAt(x, y, 14, rand(40, 60), 0.45);
+  }
+
+  // ───────── 焚き火あそび ─────────
+  private treats: { u: number; v: number; t: number; burn: boolean; done: boolean }[] = [];
+  private sparklers: { u: number; v: number; t: number }[] = [];
+
+  /** 芽の子の手もと（絵の中の位置 0..1）から、マシュマロを焚き火にかざす。burn なら焦げる */
+  marshmallow(u: number, v: number, burn: boolean) {
+    this.treats.push({ u, v, t: 0, burn, done: false });
+  }
+
+  /** 芽の子の手もとで、手持ち花火 */
+  sparkler(u: number, v: number) {
+    this.sparklers.push({ u, v, t: 0 });
+  }
+
+  private drawPlay(dt: number) {
+    const { ctx } = this;
+    const s = this.s;
+    const fire = this.p(FIRE.u, FIRE.v - 0.05);
+    // マシュマロ：白 → きつね色 → こげ茶（焦げると黒くなって燃える）
+    for (let i = this.treats.length - 1; i >= 0; i--) {
+      const m = this.treats[i];
+      m.t += dt;
+      const hand = this.p(m.u, m.v);
+      const tip = { x: hand.x + (fire.x - hand.x) * 0.72, y: hand.y + (fire.y - hand.y) * 0.72 - 6 * s };
+      const ang = Math.atan2(tip.y - hand.y, tip.x - hand.x);
+      const life = 8;
+      if (m.t > life) {
+        this.burstAt(tip.x, tip.y, m.burn ? 24 : 18, m.burn ? 20 : 45, 0.6);
+        this.treats.splice(i, 1);
+        continue;
+      }
+      const k = Math.min(1, m.t / 5);
+      const shake = Math.sin(m.t * 9) * 1.2 * s;
+      ctx.strokeStyle = 'rgba(120,80,45,0.95)';
+      ctx.lineWidth = 3.6 * s;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(hand.x, hand.y);
+      ctx.lineTo(tip.x + shake, tip.y);
+      ctx.stroke();
+      const mix = (a: number[], b: number[], t: number) => a.map((x, j) => Math.round(x + (b[j] - x) * t));
+      let col: number[];
+      if (k < 0.5) col = mix([255, 250, 240], [244, 196, 110], k * 2);
+      else if (!m.burn) col = mix([244, 196, 110], [196, 120, 50], (k - 0.5) * 2);
+      else col = mix([244, 196, 110], [40, 26, 18], Math.min(1, (k - 0.5) * 3));
+      ctx.save();
+      ctx.translate(tip.x + shake, tip.y);
+      ctx.rotate(ang);
+      ctx.fillStyle = `rgb(${col.join(',')})`;
+      ctx.shadowColor = 'rgba(255,190,110,0.8)';
+      ctx.shadowBlur = 10 * s;
+      ctx.beginPath();
+      ctx.roundRect(-12 * s, -11 * s, 26 * s, 22 * s, 8 * s);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(120,80,40,0.45)';
+      ctx.lineWidth = 1.2 * s;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillRect(-8 * s, -8 * s, 11 * s, 4 * s);
+      ctx.restore();
+      if (m.burn && k > 0.75 && Math.random() < 0.6) {
+        const max = rand(0.3, 0.6);
+        this.flames.push({ x: tip.x + rand(-4, 4) * s, y: tip.y - 4 * s, vx: 0, vy: -rand(30, 60) * s, life: max, max, size: rand(5, 9) * s, hue: 0, seed: rand(0, 10) });
+      }
+      if (!m.burn && k >= 1 && !m.done) {
+        // ちょうどいい焼き色：きらっと
+        m.done = true;
+        this.burstAt(tip.x, tip.y - 8 * s, 16, 48, 0.4);
+      }
+      if (Math.random() < dt * 3) {
+        const max = rand(1.2, 2);
+        this.sparks.push({ x: tip.x, y: tip.y - 6 * s, vx: rand(-6, 6), vy: -rand(14, 24), life: max, max, size: 0.9, hue: 40, light: 88, seed: rand(0, 10), kind: 2 });
+      }
+    }
+    // 手持ち花火：棒の先から、ぱちぱちと枝分かれする火花
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = this.sparklers.length - 1; i >= 0; i--) {
+      const sp = this.sparklers[i];
+      sp.t += dt;
+      const life = 7;
+      if (sp.t > life) {
+        this.sparklers.splice(i, 1);
+        continue;
+      }
+      const hand = this.p(sp.u, sp.v);
+      const sway = Math.sin(sp.t * 2.2) * 0.35;
+      const tip = { x: hand.x + Math.sin(sway) * 56 * s, y: hand.y - Math.cos(sway) * 56 * s };
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = 'rgba(90,80,80,0.9)';
+      ctx.lineWidth = 2.6 * s;
+      ctx.beginPath();
+      ctx.moveTo(hand.x, hand.y);
+      ctx.lineTo(tip.x, tip.y);
+      ctx.stroke();
+      ctx.globalCompositeOperation = 'lighter';
+      const fade = Math.min(1, (life - sp.t) / 1.2);
+      const g = ctx.createRadialGradient(tip.x, tip.y, 0, tip.x, tip.y, 70 * s);
+      g.addColorStop(0, `rgba(255,230,160,${0.55 * fade})`);
+      g.addColorStop(1, 'rgba(255,180,80,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(tip.x - 70 * s, tip.y - 70 * s, 140 * s, 140 * s);
+      for (let n = 0; n < 14 * fade; n++) {
+        const a = rand(0, Math.PI * 2);
+        const len = rand(14, 46) * s;
+        const x2 = tip.x + Math.cos(a) * len;
+        const y2 = tip.y + Math.sin(a) * len;
+        ctx.strokeStyle = `rgba(255,${210 + Math.floor(Math.random() * 40)},150,${0.85 * fade})`;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(tip.x, tip.y);
+        ctx.lineTo(x2, y2);
+        // 先で小さく枝分かれ
+        const b = a + rand(-0.9, 0.9);
+        ctx.lineTo(x2 + Math.cos(b) * len * 0.35, y2 + Math.sin(b) * len * 0.35);
+        ctx.stroke();
+      }
+    }
+    ctx.globalCompositeOperation = 'source-over';
   }
 
   reaction(id: ReactionId) {

@@ -1015,3 +1015,39 @@ button:disabled { cursor: default; }
 .atlas__scroll { display: block; height: 100%; }
 .atlas__map { width: max(100vw, 100dvh * 1.6); min-width: 0; margin: 0; }
 .atlas__painting { border-radius: 0; }
+
+/* 焚き火あそび */
+.campfire-play { position: absolute; right: 18px; bottom: calc(100px + var(--safe-b)); display: flex; flex-direction: column; gap: 10px; z-index: 5; }
+.campfire-play__item {
+  width: 54px; height: 54px; padding: 8px; border-radius: 50%; border: 1px solid rgba(255, 220, 160, 0.35);
+  background: radial-gradient(circle at 40% 35%, rgba(90, 60, 40, 0.85), rgba(30, 18, 12, 0.85)); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 170, 90, 0.25);
+  transition: transform 0.2s, box-shadow 0.2s; animation: bob 3.2s ease-in-out infinite;
+}
+.campfire-play__item:nth-child(2) { animation-delay: -1s; }
+.campfire-play__item:nth-child(3) { animation-delay: -2s; }
+.campfire-play__item:hover { transform: scale(1.1) rotate(-6deg); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 0 22px rgba(255, 190, 110, 0.55); }
+.campfire-play__item:active { transform: scale(0.92); }
+.campfire-play__item svg { width: 100%; height: 100%; display: block; }
+.toast-mug { position: absolute; width: 4.4%; transform: translate(-50%, -100%); pointer-events: none; animation: toast-up 3s ease forwards; }
+.toast-mug svg { width: 100%; display: block; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+.toast-mug.is-left { --lean: 22deg; }
+.toast-mug.is-right { --lean: -22deg; }
+@keyframes toast-up {
+  0% { opacity: 0; transform: translate(-50%, -60%) scale(0.4); }
+  15% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+  28% { transform: translate(-50%, -110%) rotate(var(--lean)) scale(1.08); }
+  36% { transform: translate(-50%, -105%) rotate(calc(var(--lean) * -0.3)); }
+  80% { opacity: 1; transform: translate(-50%, -100%) rotate(0); }
+  100% { opacity: 0; transform: translate(-50%, -90%); }
+}
+.toast-mug__fizz { position: absolute; left: 30%; top: -10%; width: 40%; height: 40%; }
+.toast-mug__fizz::before, .toast-mug__fizz::after {
+  content: ''; position: absolute; width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 250, 230, 0.9); animation: fizz 1.2s ease-out 0.8s 2;
+}
+.toast-mug__fizz::after { left: 60%; animation-delay: 1s; }
+@keyframes fizz { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-26px); opacity: 0; } }
+@media (max-width: 720px) {
+  .campfire-play { right: 10px; bottom: calc(150px + var(--safe-b)); gap: 8px; }
+  .campfire-play__item { width: 46px; height: 46px; }
+  .toast-mug { width: 4.5%; }
+}

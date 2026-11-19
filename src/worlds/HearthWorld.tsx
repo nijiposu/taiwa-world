@@ -70,6 +70,8 @@ export function HearthWorld() {
   const [hops, setHops] = useState<Partial<Record<SeatId, number>>>({});
   const [now, setNow] = useState(Date.now());
   const narrow = useNarrow();
+  const [toast, setToast] = useState(0);
+  const playCool = useRef(0);
   const seats = narrow ? SEAT_POS_NARROW : SEAT_POS;
   const npc = narrow ? NPC_POS_NARROW : NPC_POS;
 
@@ -123,6 +125,28 @@ export function HearthWorld() {
       if (action.fx.startsWith('lantern')) {
         scene.lantern(action.value ?? 0);
         sound.chime((action.value ?? 0) % 4, undefined, 0.5);
+      }
+      // 焚き火あそび（だれの芽の子がするかは value に席の番号）
+      const seat = SEATS[action.value ?? 0]?.seat;
+      if (seat && (action.fx === 'marshmallow' || action.fx === 'marshmallow-burn' || action.fx === 'sparkler')) {
+        const pos = seats[seat];
+        const hu = (pos.u + (pos.flip ? 2.2 : -2.2)) / 100;
+        const hv = (pos.v - 4) / 100;
+        if (action.fx === 'sparkler') {
+          scene.sparkler(hu, hv - 0.02);
+          sound.sample('campfire', 'fire', 0.3);
+        } else {
+          scene.marshmallow(hu, hv, action.fx === 'marshmallow-burn');
+          sound.sample('campfire', 'tap', 0.4);
+        }
+        setHops((h) => ({ ...h, [seat]: Date.now() }));
+      }
+      if (action.fx === 'toast') {
+        setToast(Date.now());
+        sound.chime(2, undefined, 0.6);
+        window.setTimeout(() => sound.chime(3, undefined, 0.5), 700);
+        window.setTimeout(() => sound.chime(1, undefined, 0.4), 760);
+        scene.pop();
       }
     }
     if (action.type === 'drawTopic' && action.drawn.world === 'campfire') {
@@ -253,6 +277,17 @@ export function HearthWorld() {
           </button>
         )}
 
+        {/* 乾杯：みんなの芽の子がマグを掲げる */}
+        {toast > 0 &&
+          SEATS.filter((s) => participants[s.seat]).map((s) => {
+            const pos = seats[s.seat];
+            return (
+              <span key={`${s.seat}-${toast}`} className={`toast-mug ${pos.flip ? 'is-left' : 'is-right'}`} style={{ left: `${pos.u + (pos.flip ? 2.5 : -2.5)}%`, top: `${pos.v - 15}%` }} aria-hidden>
+                <MugIcon />
+                <i className="toast-mug__fizz" />
+              </span>
+            );
+          })}
         {/* ときどき通りかかる子 */}
         {walker && IMG.walk && (
           <span
@@ -267,6 +302,71 @@ export function HearthWorld() {
         )}
       </CoverStage>
       <canvas ref={canvasRef} className="world__canvas world__canvas--fx" />
+      {/* 焚き火あそび：文字ではなく、道具の絵だけ */}
+      <div className="campfire-play" onPointerDown={(e) => e.stopPropagation()}>
+        {(
+          [
+            ['marshmallow', 'マシュマロを焼く', <MarshmallowIcon key="m" />],
+            ['sparkler', '手持ち花火', <SparklerIcon key="s" />],
+            ['toast', 'みんなで乾杯', <MugIcon key="t" />],
+          ] as const
+        ).map(([kind, label, icon]) => (
+          <button
+            key={kind}
+            className="campfire-play__item"
+            aria-label={label}
+            title={label}
+            onClick={() => {
+              const now = Date.now();
+              if (now - playCool.current < 1500) return;
+              playCool.current = now;
+              const seatNo = SEATS.findIndex((s) => s.seat === me.seat);
+              if (kind === 'marshmallow') dispatch({ type: 'fx', world: 'campfire', fx: Math.random() < 0.3 ? 'marshmallow-burn' : 'marshmallow', value: seatNo });
+              else if (kind === 'sparkler') dispatch({ type: 'fx', world: 'campfire', fx: 'sparkler', value: seatNo });
+              else dispatch({ type: 'fx', world: 'campfire', fx: 'toast' });
+            }}
+          >
+            {icon}
+          </button>
+        ))}
+      </div>
     </div>
+  );
+}
+
+function MarshmallowIcon() {
+  return (
+    <svg viewBox="0 0 40 40" aria-hidden>
+      <line x1="6" y1="34" x2="26" y2="14" stroke="#8a5a32" strokeWidth="2.4" strokeLinecap="round" />
+      <rect x="20" y="5" width="14" height="13" rx="4" transform="rotate(-45 27 11.5)" fill="#fff6e6" stroke="#e8c79a" strokeWidth="1.2" />
+      <rect x="26" y="9" width="5" height="4" rx="1.5" transform="rotate(-45 27 11.5)" fill="#f2c27a" opacity=".8" />
+    </svg>
+  );
+}
+
+function SparklerIcon() {
+  return (
+    <svg viewBox="0 0 40 40" aria-hidden>
+      <line x1="10" y1="36" x2="22" y2="16" stroke="#8a8080" strokeWidth="2" strokeLinecap="round" />
+      <g stroke="#ffd98a" strokeWidth="1.6" strokeLinecap="round">
+        <line x1="23" y1="14" x2="33" y2="6" />
+        <line x1="23" y1="14" x2="35" y2="16" />
+        <line x1="23" y1="14" x2="27" y2="3" />
+        <line x1="23" y1="14" x2="15" y2="6" />
+        <line x1="23" y1="14" x2="31" y2="24" />
+      </g>
+      <circle cx="23" cy="14" r="3.2" fill="#fff4cf" />
+    </svg>
+  );
+}
+
+function MugIcon() {
+  return (
+    <svg viewBox="0 0 40 40" aria-hidden>
+      <path d="M9 12 h18 v18 a4 4 0 0 1 -4 4 h-10 a4 4 0 0 1 -4 -4 z" fill="#c98a3c" stroke="#7a4a1c" strokeWidth="1.4" />
+      <path d="M27 16 h4 a4 4 0 0 1 0 8 h-4" fill="none" stroke="#7a4a1c" strokeWidth="2.4" />
+      <path d="M8 13 q3 -6 7 -3 q3 -5 7 -1 q4 -3 6 3 z" fill="#fffaf0" />
+      <rect x="12" y="17" width="3" height="12" rx="1.5" fill="#f2c27a" opacity=".7" />
+    </svg>
   );
 }
