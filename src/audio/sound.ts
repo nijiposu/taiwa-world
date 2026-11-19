@@ -88,13 +88,20 @@ class SoundEngine {
     if (file) {
       const audio = new Audio(assetUrl(file));
       audio.loop = true;
-      audio.volume = 0.45;
+      audio.volume = 0;
       // 素材が置かれていなければ、合成音に切りかえる
       audio.addEventListener('error', () => {
         if (this.world === world && this.enabled) this.startSynth(world);
       });
       void audio.play().catch(() => undefined);
-      this.ambient = { stop: () => audio.pause() };
+      // ふわっと入って、ふわっと消える
+      const fadeIn = fade(audio, 0.45, 1800);
+      this.ambient = {
+        stop: () => {
+          fadeIn();
+          fade(audio, 0, 900, () => audio.pause());
+        },
+      };
       return;
     }
     this.startSynth(world);
@@ -263,6 +270,24 @@ class SoundEngine {
     src.connect(f).connect(g).connect(this.master);
     src.start(t);
   }
+}
+
+/** 音量をなめらかに変える。止める関数を返す */
+function fade(audio: HTMLAudioElement, to: number, ms: number, done?: () => void) {
+  const from = audio.volume;
+  const start = performance.now();
+  let stopped = false;
+  const step = (now: number) => {
+    if (stopped) return;
+    const k = Math.max(0, Math.min(1, (now - start) / ms));
+    audio.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+    if (k < 1) requestAnimationFrame(step);
+    else done?.();
+  };
+  requestAnimationFrame(step);
+  return () => {
+    stopped = true;
+  };
 }
 
 function readPref() {

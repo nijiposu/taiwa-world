@@ -50,7 +50,8 @@ export const worldAssets: Record<WorldId, WorldAssets> = {
   lantern: {
     // ちえさんの「灯籠祭 −心の旅路−」の絵
     scenes: { festival: 'assets/lantern/festival.webp' },
-    // ambient: 'assets/lantern/ambient.mp3',
+    // ちえさんの曲
+    ambient: 'assets/lantern/ambient.mp3',
   },
   nagori: {
     // ナゴリの樹・根もとの村の絵と、ゲームの森のBGM

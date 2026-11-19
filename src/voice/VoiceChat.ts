@@ -6,6 +6,19 @@ import type { SeatId } from '../state/types';
 const ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.cloudflare.com:3478' }, { urls: 'stun:stun.l.google.com:19302' }];
 const SPEAK_LEVEL = 0.035;
 
+/**
+ * 声の音質を上げる。Opus（Discord と同じ方式）のビットレートを、ふつうの約32kbpsから48kbpsへ。
+ * 途切れたときの補い（FEC）は入れ、無音時に送らない設定（DTX）は切って声の立ち上がりを自然にする。
+ */
+function tuneOpus(sdp: string) {
+  const pt = sdp.match(/a=rtpmap:(\d+) opus\/48000/i)?.[1];
+  if (!pt) return sdp;
+  return sdp.replace(new RegExp(`a=fmtp:${pt} ([^\r\n]*)`), (_line, params: string) => {
+    const keep = params.split(';').filter((p) => !/^(maxaveragebitrate|useinbandfec|usedtx|stereo)=/.test(p.trim()));
+    return `a=fmtp:${pt} ${[...keep, 'maxaveragebitrate=48000', 'useinbandfec=1', 'usedtx=0', 'stereo=0'].join(';')}`;
+  });
+}
+
 export interface VoiceSnapshot {
   joined: boolean;
   joining: boolean;
@@ -128,8 +141,9 @@ export class VoiceChat {
         await peer.pc.setRemoteDescription({ type: 'offer', sdp: data.sdp });
         await this.flushIce(peer);
         const answer = await peer.pc.createAnswer();
-        await peer.pc.setLocalDescription(answer);
-        this.store.signal({ type: 'answer', sdp: answer.sdp ?? '' }, from);
+        const sdp = tuneOpus(answer.sdp ?? '');
+        await peer.pc.setLocalDescription({ type: 'answer', sdp });
+        this.store.signal({ type: 'answer', sdp }, from);
         break;
       }
       case 'answer': {
@@ -160,8 +174,9 @@ export class VoiceChat {
     const peer = this.peer(id);
     if (this.store.clientId < id && peer.pc.signalingState === 'stable' && !peer.pc.remoteDescription) {
       const offer = await peer.pc.createOffer();
-      await peer.pc.setLocalDescription(offer);
-      this.store.signal({ type: 'offer', sdp: offer.sdp ?? '' }, id);
+      const sdp = tuneOpus(offer.sdp ?? '');
+      await peer.pc.setLocalDescription({ type: 'offer', sdp });
+      this.store.signal({ type: 'offer', sdp }, id);
     }
   }
 
