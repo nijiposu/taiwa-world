@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { sound } from '../audio/sound';
-import { worldAssets } from '../config/assets';
+import { assetUrl, worldAssets } from '../config/assets';
 import { coverPoint, coverUV } from '../engine/cover';
 import { useActionEffect, useDispatch } from '../state/RoomContext';
 import { CoverStage } from './CoverStage';
@@ -23,7 +23,7 @@ export function FestivalWorld() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const s = new FestivalScene(canvas);
+    const s = new FestivalScene(canvas, IMG.festival ? assetUrl(IMG.festival) : undefined);
     s.start();
     setScene(s);
     return () => s.destroy();

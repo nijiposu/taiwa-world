@@ -1,6 +1,7 @@
 import type { ReactionId } from '../state/types';
 import { coverPoint, coverRect } from '../engine/cover';
 import { Scene, flicker, rand, stepParticles, type Particle } from '../engine/Scene';
+import { PLATE_W, buildLanterns, type MovingLantern } from './FestivalLanterns';
 
 /** ちえさんの灯籠祭の絵の中の位置。0..1 */
 export const FESTIVAL_ASPECT = 1672 / 941;
@@ -35,8 +36,9 @@ interface Twinkle {
 
 /**
  * 灯籠祭（ちえさんの世界）の絵に重ねる、静かな演出。
- * ちえさんの作品の仕掛け（灯籠・おみくじ・花火・風鈴）はネタバレになるので使わない。
- * 星のまたたき、流れ星、湖のきらめきと波紋、夕日、水面をすべる霧だけで、絵を呼吸させる。
+ * ちえさんの作品の仕掛け（灯籠を流す・おみくじ・花火・風鈴）はネタバレになるので使わない。
+ * 絵に描かれている灯籠は、そのまま切り出して、空ではふわりと浮き沈みし、湖ではゆらゆら漂う。
+ * あとは星のまたたき、流れ星、湖のきらめきと波紋、夕日、水面をすべる霧で、絵を呼吸させる。
  */
 export class FestivalScene extends Scene {
   private glints: Particle[] = [];
@@ -47,10 +49,53 @@ export class FestivalScene extends Scene {
   private sunGlow = 0;
   private path = 0;
   private nextStar = 4;
+  private plate: HTMLCanvasElement | null = null;
+  private lanterns: MovingLantern[] = [];
 
-  constructor(canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement, src?: string) {
     super(canvas);
     this.drawBackdrop = false;
+    if (src) {
+      const img = new Image();
+      img.onload = () => {
+        const built = buildLanterns(img);
+        this.plate = built.plate;
+        this.lanterns = built.lanterns;
+      };
+      img.src = src;
+    }
+  }
+
+  /** 灯籠のない絵を敷き、その上に灯籠を少しずつ動かして描く */
+  private drawLanterns() {
+    if (!this.plate) return;
+    const { ctx, t } = this;
+    const r = coverRect(this.w, this.h, FESTIVAL_ASPECT);
+    const k = r.w / PLATE_W;
+    ctx.drawImage(this.plate, r.x, r.y, r.w, r.h);
+    for (const l of this.lanterns) {
+      const a = t * l.speed + l.phase;
+      const dx = l.water ? Math.sin(a * 0.5) * l.amp * 1.8 : Math.sin(a * 1.7) * l.amp * 0.35;
+      const dy = l.water ? Math.sin(a) * l.amp * 0.5 : -l.amp * (0.5 - 0.5 * Math.cos(a));
+      const rot = l.water ? Math.sin(a * 0.8) * 0.03 : Math.sin(a * 1.3) * 0.05;
+      const cx = r.x + (l.x + l.w / 2 + dx) * k;
+      const cy = r.y + (l.y + l.h / 2 + dy) * k;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rot);
+      ctx.drawImage(l.sprite, (-l.w / 2) * k, (-l.h / 2) * k, l.w * k, l.h * k);
+      ctx.restore();
+      // ほのかな灯りのゆらぎ
+      const glow = 0.12 + flicker(t * 0.9, l.phase) * 0.06;
+      const gr = Math.max(l.w, l.h) * k * 0.9;
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, gr);
+      g.addColorStop(0, `rgba(255,200,120,${glow})`);
+      g.addColorStop(1, 'rgba(255,160,70,0)');
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = g;
+      ctx.fillRect(cx - gr, cy - gr, gr * 2, gr * 2);
+      ctx.globalCompositeOperation = 'source-over';
+    }
   }
 
   protected paintBackdrop() {}
@@ -82,6 +127,8 @@ export class FestivalScene extends Scene {
     const { ctx, t } = this;
     const s = this.s;
     const wy = this.waterY;
+
+    this.drawLanterns();
 
     // ── 水面をすべる霧 ──
     for (const m of this.mist) {
