@@ -1,5 +1,6 @@
 import { initialState, reduce, upgrade } from './reducer';
-import { BroadcastTransport, type RoomMessage, type RoomTransport } from './transport';
+import type { SignalData } from './protocol';
+import { createTransport, type RoomMessage, type RoomTransport, type TransportStatus } from './transport';
 import type { Action, SeatId, SessionState } from './types';
 import { safeStorage, uid } from './util';
 
@@ -8,6 +9,10 @@ const PRESENCE_TIMEOUT = 11000;
 
 type Listener = () => void;
 type ActionListener = (action: Action, remote: boolean) => void;
+type SignalListener = (from: string, data: SignalData) => void;
+
+/** 'local' は同じブラウザのタブ同士だけ（開発用） */
+export type ConnectionStatus = TransportStatus | 'local';
 
 /**
  * ルームの状態を持つストア。
@@ -24,16 +29,35 @@ export class RoomStore {
   private presence = new Map<string, { seat: SeatId | null; at: number }>();
   private presenceSnapshot: SeatId[] = [];
   private mySeat: SeatId | null = null;
+  private status: ConnectionStatus = 'local';
+  private signalListeners = new Set<SignalListener>();
   private timer: number | undefined;
   private unsubscribe: () => void;
 
   constructor(
     readonly roomId: string,
-    private transport: RoomTransport = new BroadcastTransport(roomId),
+    private transport: RoomTransport = createTransport(roomId),
   ) {
     this.state = this.load() ?? initialState(roomId);
     this.unsubscribe = transport.subscribe((m) => this.receive(m));
-    transport.send({ kind: 'hello', from: this.clientId });
+    if (transport.onStatus) {
+      // 部屋サーバーにつながるたびに「こんにちは」を送り、部屋の状態を受け取りなおす
+      this.status = 'connecting';
+      transport.onStatus((s) => {
+        this.status = s;
+        if (s === 'open') {
+          transport.send({ kind: 'hello', from: this.clientId });
+          this.beat();
+        } else {
+          // 切れている間は、ほかの人の在室がわからない
+          this.presence.clear();
+          this.refreshPresence();
+        }
+        this.emit();
+      });
+    } else {
+      transport.send({ kind: 'hello', from: this.clientId });
+    }
     this.timer = window.setInterval(() => this.beat(), PRESENCE_INTERVAL);
     window.addEventListener('pagehide', () => this.destroy(), { once: true });
   }
@@ -61,6 +85,19 @@ export class RoomStore {
 
   getState = () => this.state;
   getOnline = () => this.presenceSnapshot;
+  getStatus = () => this.status;
+
+  /** 声の通話の合図を送る（to が無ければ部屋の全員へ） */
+  signal(data: SignalData, to?: string) {
+    this.transport.send({ kind: 'signal', from: this.clientId, to, data });
+  }
+
+  onSignal(listener: SignalListener) {
+    this.signalListeners.add(listener);
+    return () => {
+      this.signalListeners.delete(listener);
+    };
+  }
 
   subscribe = (listener: Listener) => {
     this.listeners.add(listener);
@@ -108,16 +145,31 @@ export class RoomStore {
         this.apply(m.action, true);
         break;
       case 'hello':
-        this.transport.send({ kind: 'snapshot', from: this.clientId, to: m.from, rev: this.rev, state: this.state });
+        // タブ同士のときだけ、先にいた人が状態を渡す（サーバーがあるときはサーバーが渡す）
+        if (this.status === 'local') this.transport.send({ kind: 'snapshot', from: this.clientId, to: m.from, rev: this.rev, state: this.state });
         this.beat();
         break;
       case 'snapshot':
-        if (m.to === this.clientId && m.rev > this.rev) {
+        if (m.to !== this.clientId) break;
+        if (m.authoritative) {
+          if (m.state === null) {
+            // 部屋サーバーがまだ空なら、手元の状態を最初の状態として渡す
+            this.transport.send({ kind: 'seed', from: this.clientId, state: this.state });
+          } else {
+            this.state = upgrade(m.state);
+            this.rev = m.rev;
+            this.save();
+            this.emit();
+          }
+        } else if (m.state && m.rev > this.rev) {
           this.state = upgrade(m.state);
           this.rev = m.rev;
           this.save();
           this.emit();
         }
+        break;
+      case 'signal':
+        this.signalListeners.forEach((l) => l(m.from, m.data));
         break;
       case 'presence':
         this.presence.set(m.from, { seat: m.seat, at: Date.now() });

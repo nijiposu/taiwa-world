@@ -6,19 +6,22 @@
   "description": "好きなものを持ち寄り、さまざまな世界を訪れながら対話する60分のためのWebアプリ",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc -p worker/tsconfig.json && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b && tsc -p worker/tsconfig.json",
+    "serve": "vite build && wrangler dev"
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261119.1",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
     "typescript": "5.6",
-    "vite": "^6.4.5"
+    "vite": "^6.4.5",
+    "wrangler": "^4.165.0"
   }
 }

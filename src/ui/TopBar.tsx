@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { sound } from '../audio/sound';
 import { workLink } from '../config/links';
 import { WORLDS } from '../data/worlds';
-import { useMe, useSession } from '../state/RoomContext';
+import { useConnection, useMe, useSession } from '../state/RoomContext';
 import type { Panel } from './PanelContext';
 import { Timer } from './Timer';
 
@@ -10,6 +10,7 @@ export function TopBar({ open }: { open: (p: Panel) => void }) {
   const world = useSession((s) => s.world);
   const theme = useSession((s) => s.theme);
   const me = useMe();
+  const connection = useConnection();
   const [soundOn, setSoundOn] = useState(sound.enabled);
   const info = WORLDS[world];
 
@@ -27,6 +28,12 @@ export function TopBar({ open }: { open: (p: Panel) => void }) {
           </a>
         )}
       </div>
+      {(connection === 'connecting' || connection === 'closed') && (
+        <span className="conn" role="status">
+          <i aria-hidden />
+          {connection === 'closed' ? 'つながり直しています…' : 'つないでいます…'}
+        </span>
+      )}
       <Timer />
       <div className="topbar__tools">
         <button

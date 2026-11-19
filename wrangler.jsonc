@@ -1,10 +1,19 @@
-// Cloudflare（Workers の静的サイト）で公開するための設定。
+// Cloudflare で公開するための設定。
 // GitHub の main に保存すると、Cloudflare が npm run build → npx wrangler deploy で自動公開する。
+// - 画面のファイル：dist/
+// - 部屋サーバー：worker/（/api/room/<部屋名> に WebSocket でつなぐ。部屋ごとに Durable Object が1つ）
 {
   "name": "taiwa-world",
+  "main": "worker/index.ts",
   "compatibility_date": "2025-11-01",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "Room" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }]
 }

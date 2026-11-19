@@ -26,6 +26,11 @@ export function useOnline() {
   return useSyncExternalStore(store.subscribe, store.getOnline);
 }
 
+export function useConnection() {
+  const { store } = useRoom();
+  return useSyncExternalStore(store.subscribe, store.getStatus);
+}
+
 export function useMe() {
   return useRoom().me;
 }
