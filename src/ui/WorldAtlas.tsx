@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { sound } from '../audio/sound';
 import { assetUrl, worldAssets } from '../config/assets';
 import { workLink } from '../config/links';
-import { ATLAS, SPOT_OFFSET, type AtlasRegion } from '../data/atlas';
+import { ATLAS, MAP_IMAGE, MAP_LABELS, MAP_SPOTS, SPOT_OFFSET, type AtlasRegion } from '../data/atlas';
 import { WORLDS } from '../data/worlds';
 import { seeded } from '../engine/Scene';
 import { useDispatch, useMe, useSession } from '../state/RoomContext';
@@ -34,7 +34,9 @@ function islandPath(r: AtlasRegion, seed: number) {
   return d + 'Z';
 }
 
-function spotOf(region: AtlasRegion, world: WorldId) {
+function spotOf(region: AtlasRegion, world: WorldId, painted = false) {
+  const onMap = painted ? MAP_SPOTS[world] : undefined;
+  if (onMap) return { x: onMap[0], y: onMap[1] };
   const [dx, dy] = SPOT_OFFSET[world] ?? [0, 0];
   return { x: region.x + dx, y: region.y + dy };
 }
@@ -140,7 +142,13 @@ export function WorldAtlas({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   const here = ATLAS.find((r) => r.worlds.includes(world)) ?? HUB;
-  const herePos = spotOf(here, world);
+  const [painted, setPainted] = useState(false);
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setPainted(true);
+    img.src = assetUrl(MAP_IMAGE);
+  }, []);
+  const herePos = spotOf(here, world, painted);
   const sel = typeof selected === 'string' && selected in WORLDS ? WORLDS[selected as WorldId] : null;
   const selRegion = ATLAS.find((r) => r.id === selected || (sel && r.worlds.includes(sel.id)));
 
@@ -159,8 +167,14 @@ export function WorldAtlas({ onClose }: { onClose: () => void }) {
         </button>
       </header>
       <div className="atlas__scroll">
-        <div className="atlas__map">
-          <svg viewBox={`0 0 ${W} ${H}`} className="atlas__svg" aria-hidden>
+        <div className={`atlas__map ${painted ? 'is-painted' : ''}`}>
+          {painted && (
+            <div className="atlas__painting" aria-hidden>
+              <img src={assetUrl(MAP_IMAGE)} alt="" draggable={false} />
+              <span className="atlas__sparkle" />
+            </div>
+          )}
+          {!painted && <svg viewBox={`0 0 ${W} ${H}`} className="atlas__svg" aria-hidden>
             <defs>
               <radialGradient id="atlas-sea" cx="50%" cy="50%" r="70%">
                 <stop offset="0" stopColor="#1b2350" />
@@ -204,10 +218,18 @@ export function WorldAtlas({ onClose }: { onClose: () => void }) {
                 {r.comingSoon && <path d={paths[i]} fill="rgba(180,180,220,.35)" filter="url(#atlas-fog)" className="atlas-mist" />}
               </g>
             ))}
-          </svg>
+          </svg>}
 
           {ATLAS.map((r) => (
-            <span key={r.id} className="atlas__region-name" style={{ left: `${(r.x / W) * 100}%`, top: `${((r.y + r.r * 0.72) / H) * 100}%` }}>
+            <span
+              key={r.id}
+              className="atlas__region-name"
+              style={
+                painted && MAP_LABELS[r.id]
+                  ? { left: `${(MAP_LABELS[r.id][0] / W) * 100}%`, top: `${(MAP_LABELS[r.id][1] / H) * 100}%` }
+                  : { left: `${(r.x / W) * 100}%`, top: `${((r.y + r.r * 0.72) / H) * 100}%` }
+              }
+            >
               {r.name}
               <small>{r.note}</small>
             </span>
@@ -229,7 +251,7 @@ export function WorldAtlas({ onClose }: { onClose: () => void }) {
                   </button>,
                 ]
               : r.worlds.map((id) => {
-                  const p = spotOf(r, id);
+                  const p = spotOf(r, id, painted);
                   const been = visited.some((v) => v.world === id);
                   return (
                     <button

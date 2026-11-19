@@ -53,8 +53,9 @@ export const worldAssets: Record<WorldId, WorldAssets> = {
     // ambient: 'assets/lantern/ambient.mp3',
   },
   nagori: {
-    // background: 'assets/nagori/background.jpg',
-    // ambient: 'assets/nagori/ambient.mp3',
+    // ナゴリの樹・根もとの村の絵と、ゲームの森のBGM
+    ambient: 'assets/nagori/ambient.mp3',
+    scenes: { village: 'assets/nagori/village.webp' },
   },
   minasoko: {
     ambient: 'assets/minasoko/ambient.mp3',

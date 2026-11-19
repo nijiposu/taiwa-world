@@ -1,11 +1,11 @@
 import { assetUrl } from '../config/assets';
 
 /**
- * アイコン。絵文字か、作品の人物の絵（'img:キー'）のどちらか。
- * 絵は public/assets/nagori-ui/face-<キー>.webp
+ * アイコン。絵文字か、絵（'img:キー'）のどちらか。
+ * 絵は public/assets/nagori-ui/face-<キー>.webp。焚き火を囲む芽の子と同じ子の、色ちがい8人。
  */
 export const FACE_AVATARS = [
-  'hero-empathy', 'hero-courage', 'hero-unease', 'player', 'senpai', 'mina', 'kai', 'noa', 'ruka', 'mari', 'ren',
+  'sprout-cream', 'sprout-peach', 'sprout-sakura', 'sprout-lavender', 'sprout-sky', 'sprout-mint', 'sprout-sage', 'sprout-night',
 ].map((k) => `img:${k}`);
 
 export function Avatar({ value, className = '' }: { value?: string; className?: string }) {

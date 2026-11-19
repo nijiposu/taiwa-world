@@ -42,3 +42,16 @@ export const SPOT_OFFSET: Partial<Record<WorldId, [number, number]>> = {
   minasoko: [0, 56],
   bbq: [0, 56],
 };
+
+/** 世界地図の絵（1600×1000）の上での、行き先の位置。絵があるときはこちらを使う */
+export const MAP_IMAGE = 'assets/atlas/map.webp';
+export const MAP_SPOTS: Partial<Record<WorldId, [number, number]>> = {
+  campfire: [905, 572],
+  nagori: [870, 300],
+  lantern: [305, 196],
+};
+/** エリア名の札を置く位置（絵の上） */
+export const MAP_LABELS: Record<string, [number, number]> = {
+  tree: [880, 712],
+  wa: [270, 352],
+};

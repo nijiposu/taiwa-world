@@ -8,13 +8,13 @@ import { BbqWorld } from './BbqWorld';
 import { CampfireWorld } from './CampfireSwitch';
 import { FestivalWorld as LanternWorld } from './FestivalWorld';
 import { MinasokoWorld } from './MinasokoWorld';
-import { NagoriWorld } from './NagoriWorld';
+import { VillageWorld } from './VillageWorld';
 import { TownWorld } from './TownWorld';
 
 const VIEWS: Record<WorldId, () => JSX.Element> = {
   campfire: CampfireWorld,
   lantern: LanternWorld,
-  nagori: NagoriWorld,
+  nagori: VillageWorld,
   minasoko: MinasokoWorld,
   bbq: BbqWorld,
   town: TownWorld,
