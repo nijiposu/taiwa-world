@@ -4,6 +4,9 @@ import { SEATS, displayName } from '../data/seats';
 import { WORLDS } from '../data/worlds';
 import { EMPTY_RECORD } from '../state/reducer';
 import { useDispatch, useMe, useSession } from '../state/RoomContext';
+import { assetUrl } from '../config/assets';
+import { ReactionIcon } from './ReactionIcon';
+import { recordSummary, renderRecordCard, worldPicture } from './recordCard';
 import type { PersonalRecord, SeatId, SessionState } from '../state/types';
 import { Avatar } from './Avatar';
 import { Modal } from './Modal';
@@ -50,22 +53,25 @@ export function RecordSheet({ onClose }: { onClose: () => void }) {
   const defaultSeat: SeatId = me.role === 'guest' ? me.seat : (guests[0]?.seat ?? me.seat);
   const [seat, setSeat] = useState<SeatId>(defaultSeat);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
   const rec = state.records[seat] ?? EMPTY_RECORD;
   const isHost = me.role === 'host';
   const canEdit = (hostOnly?: boolean) => (hostOnly ? isHost : isHost || seat === me.seat);
-
-  const worlds = useMemo(() => [...new Set(state.visited.map((v) => v.world))], [state.visited]);
-  const topics = useMemo(() => [...new Set(state.history.map((h) => h.topic.text))], [state.history]);
-  const words = [...state.leaves, ...state.lanterns].filter((k) => k.seat === seat && k.text);
+  const sum = useMemo(() => recordSummary(state, seat), [state, seat]);
 
   const text = () => recordText(state, seat);
-  const save = () => {
-    const blob = new Blob([text()], { type: 'text/plain;charset=utf-8' });
+  const download = (blob: Blob, name: string) => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `今日の記録_${displayName(state.participants[seat]?.name, seat)}.txt`;
+    a.download = name;
     a.click();
-    URL.revokeObjectURL(a.href);
+    window.setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  const saveImage = async () => {
+    setSaving(true);
+    const blob = await renderRecordCard(state, seat);
+    setSaving(false);
+    if (blob) download(blob, `今日の記録_${sum.name}.png`);
   };
 
   return (
@@ -79,53 +85,58 @@ export function RecordSheet({ onClose }: { onClose: () => void }) {
           ))}
         </div>
       )}
-      <article className="record__paper">
-        <header>
-          <small>{dateLabel(state.startedAt ?? Date.now())}</small>
-          <h3>{displayName(state.participants[seat]?.name, seat)}さんの、今日の記録</h3>
+      <article className="keepsake">
+        <div className="keepsake__worlds">
+          {sum.worlds.map((w, i) => (
+            <figure key={w} className="keepsake__world" style={{ animationDelay: `${i * 0.12}s` }}>
+              {worldPicture(w) ? <img src={assetUrl(worldPicture(w)!)} alt="" /> : <span />}
+              <figcaption>{WORLDS[w].name}</figcaption>
+            </figure>
+          ))}
+        </div>
+        <header className="keepsake__head">
+          <Avatar value={sum.avatar} className="keepsake__face" />
+          <div>
+            <small>
+              {sum.date}
+              {sum.theme ? `　テーマ：${sum.theme}` : ''}
+            </small>
+            <h3>{sum.name}さんの、今日の記録</h3>
+          </div>
         </header>
-        <dl className="record__auto">
-          <dt>今日のテーマ</dt>
-          <dd>{state.theme || '自由なテーマ'}</dd>
-          <dt>訪れたワールド</dt>
-          <dd className="record__worlds">
-            {(worlds.length ? worlds : (['campfire'] as const)).map((w) => (
-              <span key={w} className={`stamp stamp--${w}`}>
-                {WORLDS[w].name}
-              </span>
-            ))}
-          </dd>
-          {topics.length > 0 && (
-            <>
-              <dt>話した問い</dt>
-              <dd>
-                <ul>
-                  {topics.map((t) => (
-                    <li key={t}>{t}</li>
-                  ))}
-                </ul>
-              </dd>
-            </>
-          )}
-          {words.length > 0 && (
-            <>
-              <dt>残したことば</dt>
-              <dd>
-                <ul>
-                  {words.map((w) => (
-                    <li key={w.id}>{w.text}</li>
-                  ))}
-                </ul>
-              </dd>
-            </>
-          )}
-        </dl>
+
+        {sum.words.length > 0 && (
+          <section className="keepsake__words">
+            <span className="keepsake__label">残したことば</span>
+            <div>
+              {sum.words.map((w, i) => (
+                <span key={i} className="keepsake__leaf">
+                  {w}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+        {sum.sent.length > 0 && (
+          <section className="keepsake__sent">
+            <span className="keepsake__label">みんなに届けたもの</span>
+            <div>
+              {sum.sent.map((r) => (
+                <span key={r.id} className="keepsake__reaction">
+                  <ReactionIcon reaction={r.id} world={state.world} /> {r.label}
+                  <b>×{r.count}</b>
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
         {FIELDS.map((f) => (
-          <label key={f.key} className="record__field">
-            <span>{f.label}</span>
+          <label key={f.key} className={`keepsake__field ${f.hostOnly ? 'keepsake__field--note' : ''}`}>
+            <span className="keepsake__label">{f.label}</span>
             <textarea
               value={rec[f.key]}
-              placeholder={f.placeholder}
+              placeholder={canEdit(f.hostOnly) ? f.placeholder : f.hostOnly ? 'ホストが書き添えます' : ''}
               readOnly={!canEdit(f.hostOnly)}
               rows={f.key === 'works' ? 2 : 3}
               onChange={(e) => dispatch({ type: 'updateRecord', seat, patch: { [f.key]: e.target.value } })}
@@ -142,17 +153,17 @@ export function RecordSheet({ onClose }: { onClose: () => void }) {
               setCopied(true);
               window.setTimeout(() => setCopied(false), 1800);
             } catch {
-              save();
+              download(new Blob([text()], { type: 'text/plain;charset=utf-8' }), `今日の記録_${sum.name}.txt`);
             }
           }}
         >
           {copied ? 'コピーしました' : 'テキストをコピー'}
         </button>
-        <button className="btn" onClick={save}>
-          ファイルで保存
-        </button>
-        <button className="btn btn--primary" onClick={() => window.print()}>
+        <button className="btn" onClick={() => window.print()}>
           印刷 / PDF
+        </button>
+        <button className="btn btn--primary" onClick={() => void saveImage()} disabled={saving}>
+          {saving ? 'つくっています…' : '記録カードを画像で保存'}
         </button>
       </div>
     </Modal>
