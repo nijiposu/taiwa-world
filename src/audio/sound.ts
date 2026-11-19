@@ -14,7 +14,25 @@ class SoundEngine {
   private ambient: { stop: () => void } | null = null;
   private world: WorldId = 'campfire';
   private missing = new Set<string>();
+  private music: GainNode | null = null;
+  private bgm: HTMLAudioElement | null = null;
   enabled = readPref();
+  /** BGM と効果音の音量（0..1）。人ごとに覚えておく */
+  musicVolume = readNum('taiwa:vol:music', 0.8);
+  sfxVolume = readNum('taiwa:vol:sfx', 0.8);
+
+  setMusicVolume(v: number) {
+    this.musicVolume = v;
+    writeNum('taiwa:vol:music', v);
+    if (this.music) this.music.gain.value = v;
+    if (this.bgm) this.bgm.volume = BGM_LEVEL * v;
+  }
+
+  setSfxVolume(v: number) {
+    this.sfxVolume = v;
+    writeNum('taiwa:vol:sfx', v);
+    if (this.master) this.master.gain.value = 0.5 * v;
+  }
 
   constructor() {
     // 前回「音あり」だった人は、最初に画面に触れた瞬間から鳴らす（自動再生の制限のため）
@@ -36,7 +54,7 @@ class SoundEngine {
     const file = worldAssets[world].sfx?.[name];
     if (!file || this.missing.has(file)) return false;
     const audio = new Audio(assetUrl(file));
-    audio.volume = volume;
+    audio.volume = Math.min(1, volume * this.sfxVolume);
     audio.addEventListener('error', () => this.missing.add(file));
     void audio.play().catch(() => undefined);
     return true;
@@ -48,8 +66,12 @@ class SoundEngine {
     if (!Ctor) return null;
     this.ctx = new Ctor();
     this.master = this.ctx.createGain();
-    this.master.gain.value = 0.5;
+    this.master.gain.value = 0.5 * this.sfxVolume;
     this.master.connect(this.ctx.destination);
+    // 合成の環境音は BGM の音量に従う
+    this.music = this.ctx.createGain();
+    this.music.gain.value = this.musicVolume;
+    this.music.connect(this.ctx.destination);
     return this.ctx;
   }
 
@@ -95,9 +117,11 @@ class SoundEngine {
       });
       void audio.play().catch(() => undefined);
       // ふわっと入って、ふわっと消える
-      const fadeIn = fade(audio, 0.45, 1800);
+      this.bgm = audio;
+      const fadeIn = fade(audio, BGM_LEVEL * this.musicVolume, 1800);
       this.ambient = {
         stop: () => {
+          if (this.bgm === audio) this.bgm = null;
           fadeIn();
           fade(audio, 0, 900, () => audio.pause());
         },
@@ -110,11 +134,11 @@ class SoundEngine {
   private startSynth(world: WorldId) {
     this.ambient?.stop();
     const ctx = this.ensure();
-    if (!ctx || !this.master) return;
+    if (!ctx || !this.music) return;
     const out = ctx.createGain();
     out.gain.setValueAtTime(0, ctx.currentTime);
-    out.gain.linearRampToValueAtTime(1, ctx.currentTime + 2);
-    out.connect(this.master);
+    out.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 2);
+    out.connect(this.music);
 
     const src = ctx.createBufferSource();
     src.buffer = this.noise(ctx, 4);
@@ -288,6 +312,25 @@ function fade(audio: HTMLAudioElement, to: number, ms: number, done?: () => void
   return () => {
     stopped = true;
   };
+}
+
+const BGM_LEVEL = 0.55;
+
+function readNum(key: string, fallback: number) {
+  try {
+    const v = Number(localStorage.getItem(key));
+    return localStorage.getItem(key) !== null && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeNum(key: string, v: number) {
+  try {
+    localStorage.setItem(key, String(v));
+  } catch {
+    /* 覚えられなくても音量は変わる */
+  }
 }
 
 function readPref() {

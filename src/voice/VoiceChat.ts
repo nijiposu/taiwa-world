@@ -50,6 +50,15 @@ export class VoiceChat {
   private localMeter: (() => number) | null = null;
   private timer = 0;
   private unsubscribe: () => void;
+  /** 相手の声の音量（0..1）。人ごとに覚えておく */
+  private volume = (() => {
+    try {
+      const v = localStorage.getItem('taiwa:vol:voice');
+      return v === null ? 1 : Math.max(0, Math.min(1, Number(v)));
+    } catch {
+      return 1;
+    }
+  })();
   private snap: VoiceSnapshot = { joined: false, joining: false, muted: false, peers: 0, speaking: [], error: null };
 
   constructor(private store: RoomStore) {
@@ -108,6 +117,20 @@ export class VoiceChat {
     this.ctx = null;
     this.localMeter = null;
     this.update({ joined: false, muted: false, peers: 0, speaking: [] });
+  }
+
+  getVolume() {
+    return this.volume;
+  }
+
+  setVolume(v: number) {
+    this.volume = v;
+    try {
+      localStorage.setItem('taiwa:vol:voice', String(v));
+    } catch {
+      /* noop */
+    }
+    for (const p of this.peers.values()) p.audio.volume = v;
   }
 
   toggleMute() {
@@ -186,6 +209,7 @@ export class VoiceChat {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     const audio = new Audio();
     audio.autoplay = true;
+    audio.volume = this.volume;
     const peer: Peer = { pc, audio, pendingIce: [], meter: null };
     this.stream?.getTracks().forEach((t) => pc.addTrack(t, this.stream!));
     pc.onicecandidate = (e) => this.store.signal({ type: 'ice', candidate: e.candidate ? e.candidate.toJSON() : null }, id);

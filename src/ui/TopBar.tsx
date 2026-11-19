@@ -7,6 +7,7 @@ import { useConnection, useMe, useSession } from '../state/RoomContext';
 import type { Panel } from './PanelContext';
 import { Timer } from './Timer';
 import { VoiceButton } from './VoiceButton';
+import { VolumePanel } from './VolumePanel';
 
 export function TopBar({ open }: { open: (p: Panel) => void }) {
   const world = useSession((s) => s.world);
@@ -14,6 +15,7 @@ export function TopBar({ open }: { open: (p: Panel) => void }) {
   const me = useMe();
   const connection = useConnection();
   const [soundOn, setSoundOn] = useState(sound.enabled);
+  const [volumeOpen, setVolumeOpen] = useState(false);
   const info = WORLDS[world];
 
   return (
@@ -39,18 +41,27 @@ export function TopBar({ open }: { open: (p: Panel) => void }) {
       <Timer />
       <div className="topbar__tools">
         <VoiceButton />
+        <span className="tool-wrap">
         <button
-          className={`tool ${soundOn ? 'is-on' : ''}`}
-          onClick={() => {
-            sound.setEnabled(!soundOn);
-            setSoundOn(!soundOn);
-          }}
-          aria-pressed={soundOn}
-          title={soundOn ? '音を消す' : '音を鳴らす'}
+          className={`tool tool--sound ${soundOn ? 'is-on' : ''}`}
+          onClick={() => setVolumeOpen((o) => !o)}
+          aria-expanded={volumeOpen}
+          title="音と音量"
         >
           <img className="tool__icon" src={assetUrl('assets/nagori-ui/icon-lantern.webp')} alt="" style={{ opacity: soundOn ? 1 : 0.45 }} />
           <span className="tool__label">音</span>
         </button>
+        {volumeOpen && (
+          <VolumePanel
+            soundOn={soundOn}
+            onToggle={() => {
+              sound.setEnabled(!soundOn);
+              setSoundOn(!soundOn);
+            }}
+            onClose={() => setVolumeOpen(false)}
+          />
+        )}
+        </span>
         <button className="tool" onClick={() => open('map')} title="世界の地図">
           <img className="tool__icon" src={assetUrl('assets/nagori-ui/icon-compass.webp')} alt="" />
           <span className="tool__label">地図</span>

@@ -993,3 +993,25 @@ button:disabled { cursor: default; }
 }
 .stone-walker__face { width: 16px; height: 16px; border-radius: 50%; overflow: hidden; display: inline-grid; place-items: center; font-size: 11px; }
 .festival__walkers { pointer-events: none; }
+
+/* 音量 */
+.tool-wrap { position: relative; display: inline-flex; }
+.volume {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 40; width: 260px; padding: 14px 16px 12px; border-radius: 16px;
+  background: var(--glass-strong); border: 1px solid var(--line-strong); box-shadow: var(--shadow); backdrop-filter: blur(14px);
+  display: flex; flex-direction: column; gap: 10px; animation: rise 0.25s ease both;
+}
+.volume__toggle { padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.05); font-size: 13px; }
+.volume__toggle.is-on { border-color: rgba(243, 176, 107, 0.6); background: rgba(243, 176, 107, 0.15); }
+.volume__row { display: grid; grid-template-columns: 5.5em 1fr 2.2em; align-items: center; gap: 8px; font-size: 13px; }
+.volume__row.is-off { opacity: 0.4; }
+.volume__row input { width: 100%; accent-color: var(--accent); }
+.volume__row b { font-weight: 400; font-size: 12px; color: var(--ink-faint); text-align: right; font-variant-numeric: tabular-nums; }
+.volume small { font-size: 11px; color: var(--ink-faint); }
+@media (max-width: 720px) { .volume { position: fixed; top: 56px; right: 10px; left: 10px; width: auto; } }
+
+/* 世界地図を画面いっぱいに */
+.atlas__head { position: absolute; top: 0; left: 0; right: 0; z-index: 3; background: linear-gradient(rgba(6, 6, 18, 0.75), transparent); border-bottom: 0; }
+.atlas__scroll { display: block; height: 100%; }
+.atlas__map { width: max(100vw, 100dvh * 1.6); min-width: 0; margin: 0; }
+.atlas__painting { border-radius: 0; }
