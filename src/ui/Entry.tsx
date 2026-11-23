@@ -9,18 +9,22 @@ export function Entry({
   state,
   online,
   initial,
+  only,
   onEnter,
 }: {
   roomId: string;
   state: SessionState;
   online: SeatId[];
   initial: Participant | null;
+  /** リンクで席を絞る：'host1' | 'host2' | 'guest'（ゲストはゲスト席だけ） */
+  only?: 'host1' | 'host2' | 'guest' | null;
   onEnter: (p: Participant) => void;
 }) {
-  const firstFree = SEATS.find((s) => !online.includes(s.seat))?.seat ?? 'guest1';
-  const [seat, setSeat] = useState<SeatId>(initial?.seat ?? firstFree);
+  const seats = only === 'guest' ? SEATS.filter((s) => s.role === 'guest') : only ? SEATS.filter((s) => s.seat === only) : SEATS;
+  const firstFree = seats.find((s) => !online.includes(s.seat))?.seat ?? seats[0].seat;
+  const [seat, setSeat] = useState<SeatId>(initial && seats.some((s) => s.seat === initial.seat) ? initial.seat : firstFree);
   const info = SEAT_BY_ID[seat];
-  const [name, setName] = useState(initial?.name ?? state.participants[seat]?.name ?? info.defaultName);
+  const [name, setName] = useState(initial?.name ?? (only === 'guest' ? '' : state.participants[seat]?.name) ?? info.defaultName);
   const [avatar, setAvatar] = useState(initial?.avatar ?? info.defaultAvatar);
   const [copied, setCopied] = useState(false);
 
@@ -31,7 +35,8 @@ export function Entry({
     setAvatar(prev?.avatar ?? SEAT_BY_ID[s].defaultAvatar);
   };
 
-  const invite = `${location.origin}${location.pathname}?room=${encodeURIComponent(roomId)}`;
+  // 招待リンクは、みんな用（ゲスト席だけが出る）のものをコピーする
+  const invite = `${location.origin}${location.pathname}?room=${encodeURIComponent(roomId)}&seat=guest`;
 
   return (
     <div className="entry">
@@ -48,7 +53,7 @@ export function Entry({
 
         <fieldset className="entry__seats">
           <legend className="label">席をえらぶ</legend>
-          {SEATS.map((s) => {
+          {seats.map((s) => {
             const taken = online.includes(s.seat);
             const p = state.participants[s.seat];
             return (

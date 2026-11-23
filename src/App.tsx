@@ -27,6 +27,12 @@ import { WorldStage } from './worlds/WorldStage';
 /** イラストが主役のワールドでは、お題カードを右に寄せて絵を隠さない */
 const SIDE_CARD_WORLDS = new Set(['minasoko', 'bbq', 'town']);
 
+/** ?seat=host1 / host2 / guest で、入室画面に出す席を絞る */
+function seatFromUrl(): 'host1' | 'host2' | 'guest' | null {
+  const v = new URLSearchParams(location.search).get('seat');
+  return v === 'host1' || v === 'host2' || v === 'guest' ? v : null;
+}
+
 function roomFromUrl() {
   const id = new URLSearchParams(location.search).get('room');
   return (id && id.replace(/[^\w-]/g, '').slice(0, 32)) || 'demo';
@@ -72,6 +78,7 @@ function EntryBackdrop() {
 
 export function App() {
   const roomId = useMemo(roomFromUrl, []);
+  const only = useMemo(seatFromUrl, []);
   const store = useMemo(() => new RoomStore(roomId), [roomId]);
   const state = useSyncExternalStore(store.subscribe, store.getState);
   const online = useSyncExternalStore(store.subscribe, store.getOnline);
@@ -100,7 +107,7 @@ export function App() {
     return (
       <div className="app">
         <EntryBackdrop />
-        <Entry roomId={roomId} state={state} online={online} initial={me} onEnter={(p) => enter(p, true)} />
+        <Entry roomId={roomId} state={state} online={online} initial={me} only={only} onEnter={(p) => enter(p, true)} />
       </div>
     );
   }
