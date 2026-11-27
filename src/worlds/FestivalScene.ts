@@ -1,4 +1,5 @@
 import type { ReactionId } from '../state/types';
+import { assetUrl } from '../config/assets';
 import { coverPoint, coverRect } from '../engine/cover';
 import { Scene, flicker, rand, stepParticles, type Particle } from '../engine/Scene';
 import { PLATE_H, PLATE_W, buildLanterns, type MovingLantern } from './FestivalLanterns';
@@ -9,6 +10,10 @@ const RISE_SECONDS = 22;
 /** 銀河鉄道が夜空を走る間隔と、走る時間 */
 const TRAIN_PERIOD = 3 * 60_000;
 const TRAIN_SECONDS = 34;
+/** 奏音さんの列車の絵（920×135）の中の、先頭と煙突の位置と、絵の中での傾き */
+const TRAIN_HEAD = { u: 0.985, v: 0.48 };
+const TRAIN_CHIMNEY = { u: 0.938, v: 0.06 };
+const TRAIN_BASE_ANGLE = Math.atan2(-42, 880);
 
 /**
  * 確かめる用：URL に ?demo=1 を付けると、銀河鉄道と昇る灯籠を待たずにすぐ見られる。
@@ -296,10 +301,16 @@ export class FestivalScene extends Scene {
   }
 
   private trainSmoke: Particle[] = [];
+  private trainImg: HTMLImageElement | null = (() => {
+    const img = new Image();
+    img.onload = () => (this.trainImg = img);
+    img.src = assetUrl('assets/lantern/train.webp');
+    return null;
+  })();
 
   /**
    * 銀河鉄道。3分に1回、地平線の向こうから天の川へ向かって夜空をのぼっていく。
-   * 窓に灯り、機関車から白い煙。時計で決めるので、部屋の全員が同じときに見る。
+   * 列車は奏音さんの絵から切り出したもの。黒い煙をたなびかせる。時計で決めるので、部屋の全員が同じときに見る。
    */
   private drawTrain() {
     const { ctx } = this;
@@ -309,76 +320,67 @@ export class FestivalScene extends Scene {
     const dt = 1 / 60;
     // 道すじ：左の地平線あたりから、天の川を斜めにのぼる
     const path = (e: number) => {
-      const a = this.p(-0.08, 0.44);
-      const b = this.p(0.22, 0.2);
-      const c = this.p(0.48, -0.08);
+      // 奏音さんの絵のように、ほぼ水平に、少しずつのぼりながら空を横切る
+      const a = this.p(-0.05, 0.3);
+      const b = this.p(0.5, 0.2);
+      const c = this.p(1.05, 0.12);
       const x = (1 - e) * (1 - e) * a.x + 2 * (1 - e) * e * b.x + e * e * c.x;
       const y = (1 - e) * (1 - e) * a.y + 2 * (1 - e) * e * b.y + e * e * c.y;
       return { x, y };
     };
-    if (running) {
-      const head = phase / TRAIN_SECONDS;
-      const cars = 5;
-      const gap = 0.03;
-      for (let i = cars; i >= 0; i--) {
-        const e = head - i * gap;
-        if (e < 0 || e > 1) continue;
-        const p0 = path(Math.max(0, e - 0.004));
-        const p1 = path(Math.min(1, e + 0.004));
-        const ang = Math.atan2(p1.y - p0.y, p1.x - p0.x);
-        const q = path(e);
-        const scale = s * (1.1 - e * 0.45);
-        const len = (i === 0 ? 34 : 30) * scale;
-        const hgt = 12 * scale;
-        ctx.save();
-        ctx.translate(q.x, q.y);
-        ctx.rotate(ang);
-        // 車体（夜空に溶ける紺）
-        ctx.fillStyle = 'rgba(28,24,60,0.92)';
-        ctx.beginPath();
-        ctx.roundRect(-len / 2, -hgt, len, hgt, 3 * scale);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,214,150,0.55)';
-        ctx.lineWidth = 0.8 * scale;
-        ctx.stroke();
-        if (i === 0) {
-          // 機関車：煙突とライト
-          ctx.fillStyle = 'rgba(28,24,60,0.95)';
-          ctx.fillRect(len * 0.18, -hgt - 6 * scale, 5 * scale, 7 * scale);
-          const g = ctx.createRadialGradient(len / 2, -hgt / 2, 0, len / 2, -hgt / 2, 26 * scale);
-          g.addColorStop(0, 'rgba(255,240,200,0.9)');
-          g.addColorStop(1, 'rgba(255,220,150,0)');
-          ctx.globalCompositeOperation = 'lighter';
-          ctx.fillStyle = g;
-          ctx.fillRect(len / 2 - 26 * scale, -hgt / 2 - 26 * scale, 52 * scale, 52 * scale);
-          ctx.globalCompositeOperation = 'source-over';
-        } else {
-          // 灯った窓
-          ctx.fillStyle = 'rgba(255,214,140,0.95)';
-          for (let w = 0; w < 4; w++) ctx.fillRect(-len / 2 + 4 * scale + w * 6.5 * scale, -hgt + 3 * scale, 4 * scale, 4 * scale);
-        }
-        // 車輪のあたりからこぼれる星くず
-        if (Math.random() < 0.5) {
-          const max = rand(1.2, 2.4);
-          this.glints.push({ x: q.x + rand(-6, 6), y: q.y + 2, vx: 0, vy: 0, life: max, max, size: rand(3, 7) * scale, hue: rand(40, 60), seed: 0 });
-        }
-        ctx.restore();
-        if (i === 0 && Math.random() < 0.6) {
-          // 白い煙（ふわっと広がって消える）
-          const sx = q.x + Math.cos(ang) * len * 0.2 - Math.sin(ang) * (-hgt - 6 * scale);
-          const sy = q.y + Math.sin(ang) * len * 0.2 + Math.cos(ang) * (-hgt - 6 * scale);
-          const max = rand(2.4, 3.6);
-          this.trainSmoke.push({ x: sx, y: sy, vx: rand(-14, -4) * scale, vy: -rand(6, 14) * scale, life: max, max, size: rand(5, 9) * scale, hue: 0, seed: rand(0, 10) });
-        }
+    if (running && this.trainImg) {
+      // 奏音さんの絵の列車（右が先頭）を、道すじの向きに合わせて走らせる
+      const img = this.trainImg;
+      const head = (phase / TRAIN_SECONDS) * 1.45;
+      const p0 = path(head - 0.01);
+      const p1 = path(head + 0.01);
+      const ang = Math.atan2(p1.y - p0.y, p1.x - p0.x) - TRAIN_BASE_ANGLE;
+      const q = path(head);
+      const w = 600 * s * (1.05 - Math.min(1, head) * 0.25);
+      const h = (w * img.height) / img.width;
+      ctx.save();
+      ctx.translate(q.x, q.y);
+      ctx.rotate(ang);
+      // 先頭（ライト）が q に来るように、絵の右端をそろえる
+      ctx.drawImage(img, -w * TRAIN_HEAD.u, -h * TRAIN_HEAD.v, w, h);
+      // ライトの光
+      ctx.globalCompositeOperation = 'lighter';
+      const lg = ctx.createRadialGradient(0, 0, 0, 0, 0, w * 0.12);
+      lg.addColorStop(0, 'rgba(220,235,255,0.7)');
+      lg.addColorStop(1, 'rgba(200,220,255,0)');
+      ctx.fillStyle = lg;
+      ctx.fillRect(-w * 0.12, -w * 0.12, w * 0.24, w * 0.24);
+      ctx.globalCompositeOperation = 'source-over';
+      // 煙突の位置（絵の中の位置から計算）
+      const cx = (TRAIN_CHIMNEY.u - TRAIN_HEAD.u) * w;
+      const cy = (TRAIN_CHIMNEY.v - TRAIN_HEAD.v) * h;
+      const m = ctx.getTransform();
+      ctx.restore();
+      const dpr = this.dpr;
+      const sx = (m.a * cx + m.c * cy + m.e) / dpr;
+      const sy = (m.b * cx + m.d * cy + m.f) / dpr;
+      if (Math.random() < 0.7) {
+        const max = rand(3.5, 5.5);
+        const back = ang + TRAIN_BASE_ANGLE + Math.PI;
+        this.trainSmoke.push({ x: sx, y: sy, vx: Math.cos(back) * rand(10, 22) * s, vy: Math.sin(back) * rand(10, 22) * s - rand(4, 10) * s, life: max, max, size: rand(7, 12) * s * (w / (600 * s)), hue: 0, seed: rand(0, 10) });
+      }
+      // 車輪のあたりからこぼれる星くず
+      if (Math.random() < 0.6) {
+        const t = Math.random();
+        const tx = q.x - Math.cos(ang + TRAIN_BASE_ANGLE) * w * t * 0.95;
+        const ty = q.y - Math.sin(ang + TRAIN_BASE_ANGLE) * w * t * 0.95 + h * 0.3;
+        const max = rand(1.2, 2.4);
+        this.glints.push({ x: tx, y: ty, vx: 0, vy: 0, life: max, max, size: rand(3, 7) * s, hue: rand(40, 60), seed: 0 });
       }
     }
     for (const p of this.trainSmoke) {
       const k = 1 - p.life / p.max;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      ctx.fillStyle = `rgba(236,230,255,${0.32 * (1 - k)})`;
+      // 奏音さんの絵のような、もくもくした黒い煙
+      ctx.fillStyle = `rgba(16,16,34,${0.42 * (1 - k)})`;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * (1 + k * 2.2), 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size * (1 + k * 2.6), 0, Math.PI * 2);
       ctx.fill();
     }
     stepParticles(this.trainSmoke, dt);
