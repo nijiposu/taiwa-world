@@ -9,7 +9,7 @@ export interface Env {
   STATS: DurableObjectNamespace<Stats>;
 }
 
-const clean = (v: unknown) => (typeof v === 'string' ? v.replace(/[^\p{L}\p{N}._:\-/ ]/gu, '').slice(0, 40) : '');
+const clean = (v: unknown) => (typeof v === 'string' ? v.replace(/[^\p{L}\p{N}._:\-/ （）()]/gu, '').slice(0, 40) : '');
 
 const ROOM_PATH = /^\/api\/room\/([\w-]{1,32})$/;
 
