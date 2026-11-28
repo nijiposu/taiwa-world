@@ -19,7 +19,7 @@ const TRAIN_BASE_ANGLE = Math.atan2(-42, 880);
  * 確かめる用：URL に ?demo=1 を付けると、銀河鉄道と昇る灯籠を待たずにすぐ見られる。
  * （開いた瞬間から数えて、鉄道は1分ごと、灯籠は40秒ごと）
  */
-const DEMO = typeof location !== 'undefined' && new URLSearchParams(location.search).has('demo');
+const DEMO = typeof location !== 'undefined' && (new URLSearchParams(location.search).has('demo') || new URLSearchParams(location.search).has('try'));
 const OPENED = Date.now();
 function clockFor(period: number, demoPeriod: number) {
   return DEMO ? ((Date.now() - OPENED) % demoPeriod) + 0 : Date.now() % period;

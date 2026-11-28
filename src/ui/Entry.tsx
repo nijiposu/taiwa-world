@@ -17,14 +17,16 @@ export function Entry({
   online: SeatId[];
   initial: Participant | null;
   /** リンクで席を絞る：'host1' | 'host2' | 'guest'（ゲストはゲスト席だけ） */
-  only?: 'host1' | 'host2' | 'guest' | null;
+  only?: 'host1' | 'host2' | 'guest' | 'try' | null;
   onEnter: (p: Participant) => void;
 }) {
-  const seats = only === 'guest' ? SEATS.filter((s) => s.role === 'guest') : only ? SEATS.filter((s) => s.seat === only) : SEATS;
+  const trial = only === 'try';
+  const seats =
+    only === 'guest' ? SEATS.filter((s) => s.role === 'guest') : trial ? SEATS.filter((s) => s.seat === 'host1') : only ? SEATS.filter((s) => s.seat === only) : SEATS;
   const firstFree = seats.find((s) => !online.includes(s.seat))?.seat ?? seats[0].seat;
   const [seat, setSeat] = useState<SeatId>(initial && seats.some((s) => s.seat === initial.seat) ? initial.seat : firstFree);
   const info = SEAT_BY_ID[seat];
-  const [name, setName] = useState(initial?.name ?? (only === 'guest' ? '' : state.participants[seat]?.name) ?? info.defaultName);
+  const [name, setName] = useState(initial?.name ?? (only === 'guest' || trial ? '' : state.participants[seat]?.name) ?? info.defaultName);
   const [avatar, setAvatar] = useState(initial?.avatar ?? info.defaultAvatar);
   const [copied, setCopied] = useState(false);
 
@@ -44,10 +46,17 @@ export function Entry({
         className="entry__panel"
         onSubmit={(e) => {
           e.preventDefault();
-          onEnter({ seat, name: name.trim(), avatar, role: info.role });
+          onEnter({ seat, name: name.trim() || (trial ? 'あなた' : ''), avatar, role: info.role });
         }}
       >
-        <p className="entry__kicker">ようこそ</p>
+        <p className="entry__kicker">{trial ? 'おためし' : 'ようこそ'}</p>
+        {trial && (
+          <p className="entry__trial">
+            あなただけの部屋で、焚き火・ナゴリの樹・灯籠祭を自由に歩けます。
+            <br />
+            右上の地図から、ほかの世界へ行ってみてください。
+          </p>
+        )}
         <h1>{APP_TITLE}</h1>
         <p className="entry__lead">{APP_SUBTITLE}</p>
 
@@ -65,8 +74,8 @@ export function Entry({
                 disabled={taken && initial?.seat !== s.seat}
               >
                 <Avatar value={p?.avatar ?? s.defaultAvatar} className="seat__face" />
-                <strong>{p?.name || s.defaultName || (s.seat === 'guest1' ? 'ゲストA' : 'ゲストB')}</strong>
-                <small>{taken ? '入室中' : s.label}</small>
+                <strong>{trial ? 'あなた' : p?.name || s.defaultName || (s.seat === 'guest1' ? 'ゲストA' : 'ゲストB')}</strong>
+                <small>{trial ? 'おためし' : taken ? '入室中' : s.label}</small>
               </button>
             );
           })}
@@ -94,11 +103,16 @@ export function Entry({
         </div>
 
         <button className="btn btn--primary btn--large">焚き火の広場へ</button>
-        <p className="entry__note">
-          入ったあと、右上の「声で参加」で話せます。顔出しは不要です。
-          <br />
-          ひとりで試すときは、ホストの席がおすすめです。
-        </p>
+        {trial ? (
+          <p className="entry__note">本番の会では、4人で焚き火を囲んで、声で話します。顔出しは不要です。</p>
+        ) : (
+          <p className="entry__note">
+            入ったあと、右上の「声で参加」で話せます。顔出しは不要です。
+            <br />
+            ひとりで試すときは、ホストの席がおすすめです。
+          </p>
+        )}
+        {!trial && (
         <div className="entry__room">
           <span>ルーム：{roomId}</span>
           <button
@@ -116,6 +130,7 @@ export function Entry({
             {copied ? 'コピーしました' : '招待リンクをコピー'}
           </button>
         </div>
+        )}
       </form>
     </div>
   );

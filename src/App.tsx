@@ -28,12 +28,30 @@ import { WorldStage } from './worlds/WorldStage';
 const SIDE_CARD_WORLDS = new Set(['minasoko', 'bbq', 'town']);
 
 /** ?seat=host1 / host2 / guest で、入室画面に出す席を絞る */
-function seatFromUrl(): 'host1' | 'host2' | 'guest' | null {
+/**
+ * お試しモード（?try）：開いた人ごとに、自分だけの部屋ができる。
+ * 知らない人と鉢合わせず、ひとりで全部の世界を歩ける（ホストの席で入る）。
+ */
+export const TRIAL = new URLSearchParams(location.search).has('try');
+
+function trialRoom() {
+  const key = 'taiwa:trial-room';
+  let id = safeStorage.get('session', key);
+  if (!id) {
+    id = `try-${Math.random().toString(36).slice(2, 10)}`;
+    safeStorage.set('session', key, id);
+  }
+  return id;
+}
+
+function seatFromUrl(): 'host1' | 'host2' | 'guest' | 'try' | null {
+  if (TRIAL) return 'try';
   const v = new URLSearchParams(location.search).get('seat');
   return v === 'host1' || v === 'host2' || v === 'guest' ? v : null;
 }
 
 function roomFromUrl() {
+  if (TRIAL) return trialRoom();
   const id = new URLSearchParams(location.search).get('room');
   return (id && id.replace(/[^\w-]/g, '').slice(0, 32)) || 'demo';
 }

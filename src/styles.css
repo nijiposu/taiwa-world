@@ -1051,3 +1051,4 @@ button:disabled { cursor: default; }
   .campfire-play__item { width: 46px; height: 46px; }
   .toast-mug { width: 4.5%; }
 }
+.entry__trial { margin: 8px 0 4px; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.7; color: #ffe8c4; background: rgba(243, 176, 107, 0.12); border: 1px solid rgba(243, 176, 107, 0.35); }
