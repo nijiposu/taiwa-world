@@ -1,4 +1,6 @@
+import { track, source } from './analytics';
 import { TRIAL } from './config/app';
+import { WORLDS } from './data/worlds';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { sound } from './audio/sound';
 import { assetUrl, worldAssets } from './config/assets';
@@ -110,10 +112,20 @@ export function App() {
     safeStorage.set('session', `taiwa:me:${roomId}`, JSON.stringify(p));
     store.setSeat(p.seat);
     store.dispatch({ type: 'join', participant: p });
+    if (fromClick) track(TRIAL ? 'trial' : 'enter', TRIAL ? source() : p.role === 'host' ? 'ホスト' : 'ゲスト');
     if (p.role === 'host' && !store.getState().startedAt) store.dispatch({ type: 'start', at: Date.now() });
     setMe(p);
     setEntered(true);
   };
+
+  // 開いた数と、どこから来たか
+  useEffect(() => {
+    track('visit', `${source()}${TRIAL ? '（お試し）' : ''}`);
+    // 自分が起こした移動だけ数える（ほかの人の画面で二重に数えない）
+    return store.onAction((a, remote) => {
+      if (!remote && a.type === 'travel') track('travel', WORLDS[a.world].name);
+    });
+  }, [store]);
 
   // 同じタブで再読み込みしたときは、そのまま席に戻る
   useEffect(() => {

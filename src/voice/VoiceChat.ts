@@ -1,3 +1,4 @@
+import { track } from '../analytics';
 import type { SignalData } from '../state/protocol';
 import type { RoomStore } from '../state/store';
 import type { SeatId } from '../state/types';
@@ -102,6 +103,7 @@ export class VoiceChat {
     void this.ctx.resume();
     this.localMeter = this.meter(this.stream);
     this.update({ joined: true, joining: false, muted: false });
+    track('voice');
     this.store.signal({ type: 'voice-join' });
     this.timer = window.setInterval(() => this.measure(), 150);
   }

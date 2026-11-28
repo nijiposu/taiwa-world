@@ -9,6 +9,7 @@ import { pick } from '../state/util';
 import { Avatar } from '../ui/Avatar';
 import { ReactionIcon } from '../ui/ReactionIcon';
 import { useVoice } from '../voice/VoiceContext';
+import { track } from '../analytics';
 import { CoverStage } from './CoverStage';
 import { HEARTH_ASPECT, HearthScene } from './HearthScene';
 
@@ -320,6 +321,7 @@ export function HearthWorld() {
               const now = Date.now();
               if (now - playCool.current < 1500) return;
               playCool.current = now;
+              track('play', label);
               const seatNo = SEATS.findIndex((s) => s.seat === me.seat);
               if (kind === 'marshmallow') dispatch({ type: 'fx', world: 'campfire', fx: Math.random() < 0.3 ? 'marshmallow-burn' : 'marshmallow', value: seatNo });
               else if (kind === 'sparkler') dispatch({ type: 'fx', world: 'campfire', fx: 'sparkler', value: seatNo });

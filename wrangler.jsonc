@@ -2,6 +2,7 @@
 // GitHub の main に保存すると、Cloudflare が npm run build → npx wrangler deploy で自動公開する。
 // - 画面のファイル：dist/
 // - 部屋サーバー：worker/（/api/room/<部屋名> に WebSocket でつなぐ。部屋ごとに Durable Object が1つ）
+// - アクセスの集計：/api/track で数え、/api/stats で見る（Durable Object の Stats が1つ）
 {
   "name": "taiwa-world",
   "main": "worker/index.ts",
@@ -13,7 +14,13 @@
     "run_worker_first": ["/api/*"]
   },
   "durable_objects": {
-    "bindings": [{ "name": "ROOMS", "class_name": "Room" }]
+    "bindings": [
+      { "name": "ROOMS", "class_name": "Room" },
+      { "name": "STATS", "class_name": "Stats" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }]
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Room"] },
+    { "tag": "v2", "new_sqlite_classes": ["Stats"] }
+  ]
 }

@@ -8,6 +8,7 @@ import { assetUrl } from '../config/assets';
 import { ReactionIcon } from './ReactionIcon';
 import { recordSummary, renderRecordCard, worldPicture } from './recordCard';
 import type { PersonalRecord, SeatId, SessionState } from '../state/types';
+import { track } from '../analytics';
 import { Avatar } from './Avatar';
 import { Modal } from './Modal';
 
@@ -72,6 +73,7 @@ export function RecordSheet({ onClose }: { onClose: () => void }) {
     const blob = await renderRecordCard(state, seat);
     setSaving(false);
     if (blob) download(blob, `今日の記録_${sum.name}.png`);
+    track('record');
   };
 
   return (
