@@ -72,7 +72,7 @@ export function WorldStage() {
       >
         {worldPicture(target) && <img key={target} className="veil__picture" src={assetUrl(worldPicture(target)!)} alt="" />}
         <div className="veil__title">
-          <small>{info.host}</small>
+          {info.host && <small>{info.host}</small>}
           {logo ? <img src={assetUrl(logo)} alt={info.name} /> : <h2>{info.name}</h2>}
           <p>{info.subtitle}</p>
         </div>

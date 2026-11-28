@@ -52,7 +52,7 @@ export function ProceduralCampfire() {
           🌳
         </span>
         <span className="path__text">
-          <small>{WORLDS.nagori.host}</small>
+          {WORLDS.nagori.host && <small>{WORLDS.nagori.host}</small>}
           {WORLDS.nagori.name}へ
         </span>
       </button>

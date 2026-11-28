@@ -231,7 +231,7 @@ export function WorldAtlas({ onClose }: { onClose: () => void }) {
               }
             >
               {r.name}
-              <small>{r.note}</small>
+              {r.note && <small>{r.note}</small>}
             </span>
           ))}
 
@@ -290,7 +290,7 @@ export function WorldAtlas({ onClose }: { onClose: () => void }) {
             <>
               {worldAssets[sel.id].thumb && <img src={assetUrl(worldAssets[sel.id].thumb!)} alt="" onError={(e) => (e.currentTarget.style.display = 'none')} />}
               <small>
-                {selRegion?.name}・{selRegion?.note}
+                {selRegion?.name}{selRegion?.note ? `・${selRegion.note}` : ''}
               </small>
               <h3>
                 {sel.name}
@@ -315,7 +315,7 @@ export function WorldAtlas({ onClose }: { onClose: () => void }) {
           ) : (
             <>
               <small>
-                {selRegion?.name}・{selRegion?.note}
+                {selRegion?.name}{selRegion?.note ? `・${selRegion.note}` : ''}
               </small>
               <h3>霧の向こう</h3>
               <p>{selRegion?.comingSoon}</p>
