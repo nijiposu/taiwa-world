@@ -1,3 +1,4 @@
+import { TRIAL } from './config/app';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { sound } from './audio/sound';
 import { assetUrl, worldAssets } from './config/assets';
@@ -32,7 +33,6 @@ const SIDE_CARD_WORLDS = new Set(['minasoko', 'bbq', 'town']);
  * お試しモード（?try）：開いた人ごとに、自分だけの部屋ができる。
  * 知らない人と鉢合わせず、ひとりで全部の世界を歩ける（ホストの席で入る）。
  */
-export const TRIAL = new URLSearchParams(location.search).has('try');
 
 function trialRoom() {
   const key = 'taiwa:trial-room';

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { sound } from '../audio/sound';
+import { TRIAL } from '../config/app';
 import { assetUrl } from '../config/assets';
 import { workLink } from '../config/links';
 import { WORLDS } from '../data/worlds';
@@ -70,7 +71,7 @@ export function TopBar({ open }: { open: (p: Panel) => void }) {
           <img className="tool__icon" src={assetUrl('assets/nagori-ui/icon-notebook.webp')} alt="" />
           <span className="tool__label">記録</span>
         </button>
-        {me.role === 'host' && (
+        {me.role === 'host' && !TRIAL && (
           <button className="tool" onClick={() => open('host')} title="進行メニュー">
             <img className="tool__icon" src={assetUrl('assets/nagori-ui/icon-record.webp')} alt="" />
             <span className="tool__label">進行</span>

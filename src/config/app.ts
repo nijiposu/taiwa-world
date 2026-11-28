@@ -11,3 +11,6 @@ export const SESSION_MINUTES = 60;
  * ここに足せば地図に戻ってくる。
  */
 export const OPEN_WORLDS: WorldId[] = ['campfire', 'nagori', 'lantern'];
+
+/** お試しモード（?try）：開いた人ごとに自分だけの部屋。進行メニューは出さない */
+export const TRIAL = typeof location !== 'undefined' && new URLSearchParams(location.search).has('try');
